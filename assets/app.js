@@ -143,7 +143,7 @@ function route() {
   let activeCategory = hash.startsWith('category=') ? hash.slice(9) : null;
   if (hash.startsWith('game=')) activeCategory = games.find(game => game.file === decodeURIComponent(hash.slice(5)))?.cat;
   document.querySelectorAll('[data-nav]').forEach(link => link.classList.toggle('active', link.dataset.nav === (activeCategory || 'home')));
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function openSearch() {
