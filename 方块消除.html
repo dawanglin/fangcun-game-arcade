@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方块消除</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Crect x='5' y='5' width='6' height='6' rx='1.5' fill='%2358d3e8'/%3E%3Crect x='13' y='5' width='6' height='6' rx='1.5' fill='%23f5b64c'/%3E%3Crect x='5' y='13' width='6' height='6' rx='1.5' fill='%23f5b64c'/%3E%3Crect x='13' y='13' width='6' height='6' rx='1.5' fill='%23ff8a7a'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(245,182,76,.08), transparent 60%);}
+  #app{width:min(94vw,440px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .scores{display:flex;gap:8px}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted);letter-spacing:.06em}
+  .score-box b{font-size:17px;font-weight:800;color:var(--amber);line-height:1.25;display:block}
+  .score-box.hi b{color:var(--cyan)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
+  .board{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;background:var(--surface2);border-radius:12px;padding:8px}
+  .cell{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.045);cursor:pointer;transition:transform .08s}
+  .cell.filled{background:var(--c,#58d3e8)}
+  .cell:hover{outline:1px solid rgba(255,255,255,.25)}
+  .shapes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .shape{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:10px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:84px;transition:border-color .15s}
+  .shape:hover{border-color:rgba(255,255,255,.3)}
+  .shape.sel{border-color:var(--amber);background:rgba(245,182,76,.08)}
+  .shape .mini{display:grid;gap:3px}
+  .shape .mini i{width:16px;height:16px;border-radius:4px;background:var(--c,#58d3e8)}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:6px}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;
+    background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}
+  .overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:320px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}
+  .overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px}
+  .overlay .sub b{color:var(--amber)}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+  .btn:active{transform:scale(.98)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>方块消除</h1><p>Block Blast 玩法 · 填满行/列消除</p></div>
+    <div class="scores">
+      <div class="score-box"><span class="k">分数</span><b id="score">0</b></div>
+      <div class="score-box hi"><span class="k">最高</span><b id="high">0</b></div>
+    </div>
+  </header>
+
+  <div class="panel"><div class="board" id="board"></div></div>
+  <div class="panel">
+    <div class="shapes" id="shapes"></div>
+    <p class="tip">选一个方块，点网格放置 · 填满整行或整列即可消除</p>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2 style="color:var(--danger)">没有位置了</h2>
+    <div class="sub">本局得分 <b id="final">0</b></div>
+    <button class="btn" id="restart">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var N=8,KEY='bbhi',high=+(localStorage.getItem(KEY)||0);
+  document.getElementById('high').textContent=high;
+  var board=[],shapes=[],sel=-1,score=0,over=false;
+  var PALETTE=['#58d3e8','#f5b64c','#7bd86b','#b06bff','#ff8a7a','#ffd84d'];
+  var LIB=[
+    {c:[[0,0]]},
+    {c:[[0,0],[1,0]]},
+    {c:[[0,0],[1,0],[2,0]]},
+    {c:[[0,0],[0,1],[0,2]]},
+    {c:[[0,0],[1,0],[0,1],[1,1]]},
+    {c:[[0,0],[1,0],[2,0],[3,0]]},
+    {c:[[0,0],[0,1],[0,2],[0,3]]},
+    {c:[[0,0],[1,0],[1,1]]},
+    {c:[[0,0],[0,1],[1,1]]},
+    {c:[[0,0],[1,0],[0,1]]},
+    {c:[[0,0],[1,0],[2,0],[2,1]]},
+    {c:[[0,0],[0,1],[0,2],[1,2]]}
+  ];
+  function fresh(){return {c:LIB[Math.floor(Math.random()*LIB.length)].c,color:PALETTE[Math.floor(Math.random()*PALETTE.length)]};}
+  function newShapes(){shapes=[fresh(),fresh(),fresh()];sel=-1;renderShapes();}
+  function renderBoard(){
+    var el=document.getElementById('board');el.innerHTML='';
+    for(var i=0;i<N*N;i++){
+      var d=document.createElement('div');d.className='cell';
+      if(board[i]){d.classList.add('filled');d.style.setProperty('--c',board[i]);}
+      (function(idx){d.addEventListener('click',function(){if(sel>=0)tryPlace(idx);});})(i);
+      el.appendChild(d);
+    }
+  }
+  function renderShapes(){
+    var el=document.getElementById('shapes');el.innerHTML='';
+    shapes.forEach(function(s,i){
+      var b=document.createElement('div');b.className='shape'+(i===sel?' sel':'');
+      b.style.setProperty('--c',s.color);
+      var mini=document.createElement('div');mini.className='mini';
+      var maxR=0,maxC=0;
+      s.c.forEach(function(p){if(p[0]>maxR)maxR=p[0];if(p[1]>maxC)maxC=p[1];});
+      mini.style.gridTemplateColumns='repeat('+(maxC+1)+',auto)';
+      for(var r=0;r<=maxR;r++)for(var c=0;c<=maxC;c++){
+        var cell=document.createElement('i');
+        var hit=s.c.some(function(p){return p[0]===r&&p[1]===c;});
+        if(!hit)cell.style.visibility='hidden';
+        mini.appendChild(cell);
+      }
+      b.appendChild(mini);
+      b.addEventListener('click',function(){sel=sel===i?-1:i;renderShapes();});
+      el.appendChild(b);
+    });
+  }
+  function canPlace(sh,idx){
+    var row=Math.floor(idx/N),col=idx%N;
+    for(var i=0;i<sh.c.length;i++){
+      var r=row+sh.c[i][0],c=col+sh.c[i][1];
+      if(r<0||c<0||r>=N||c>=N||board[r*N+c])return false;
+    }
+    return true;
+  }
+  function tryPlace(idx){
+    var sh=shapes[sel];
+    if(!canPlace(sh,idx)){shakeBoard();return;}
+    var row=Math.floor(idx/N),col=idx%N;
+    sh.c.forEach(function(p){board[(row+p[0])*N+(col+p[1])]=sh.color;});
+    shapes.splice(sel,1);sel=-1;
+    var lines=checkLines();
+    if(lines>0){
+      var pts=lines*10+(lines>1?(lines-1)*10:0);
+      score+=pts;document.getElementById('score').textContent=score;
+      if(score>high){high=score;document.getElementById('high').textContent=high;localStorage.setItem(KEY,high);}
+    }
+    renderBoard();renderShapes();
+    if(shapes.length===0){
+      newShapes();
+      if(!anyPlace()){gameOver();}
+    }
+  }
+  function checkLines(){
+    var n=0,i,j,full;
+    for(i=0;i<N;i++){
+      full=true;
+      for(j=0;j<N;j++)if(!board[i*N+j]){full=false;break;}
+      if(full){for(j=0;j<N;j++)board[i*N+j]=0;n++;}
+    }
+    for(j=0;j<N;j++){
+      full=true;
+      for(i=0;i<N;i++)if(!board[i*N+j]){full=false;break;}
+      if(full){for(i=0;i<N;i++)board[i*N+j]=0;n++;}
+    }
+    return n;
+  }
+  function anyPlace(){
+    for(var i=0;i<shapes.length;i++)
+      for(var p=0;p<N*N;p++)
+        if(canPlace(shapes[i],p))return true;
+    return false;
+  }
+  function shakeBoard(){
+    var el=document.getElementById('board');
+    el.style.transition='transform .08s';el.style.transform='translateX(-3px)';
+    setTimeout(function(){el.style.transform='';},90);
+  }
+  function gameOver(){
+    over=true;
+    document.getElementById('final').textContent=score;
+    document.getElementById('overlay').classList.add('show');
+  }
+  function init(){
+    board=[];for(var i=0;i<N*N;i++)board.push(0);
+    score=0;over=false;
+    document.getElementById('score').textContent=0;
+    document.getElementById('high').textContent=+(localStorage.getItem(KEY)||0);
+    document.getElementById('overlay').classList.remove('show');
+    newShapes();renderBoard();
+  }
+  document.getElementById('restart').addEventListener('click',init);
+  init();
+})();
+</script>
+</body>
+</html>

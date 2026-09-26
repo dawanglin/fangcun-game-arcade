@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狼羊菜过河 · 经典谜题收藏馆</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317322C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23F4EBDD' font-family='Georgia'%3E%3F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#2B2118;
+    --paper:#F4EBDD;
+    --paper2:#E9DEC9;
+    --bg:#17322C;
+    --bg2:#1F3D35;
+    --accent:#C8502E;
+    --gold:#D9A441;
+    --line:#C9BCA4;
+    --ok:#3E7C59;
+    --water:#3E6E8E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1000px 520px at 88% -8%, rgba(216,164,65,.13), transparent 60%),
+      var(--bg);
+    color:var(--paper);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px}
+
+  /* ===== 顶栏 ===== */
+  .topbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid rgba(244,235,221,.16);
+  }
+  a.back{
+    color:var(--gold);text-decoration:none;font-size:14px;
+    border:1px solid rgba(217,164,65,.4);border-radius:999px;
+    padding:6px 14px;transition:background .15s;
+  }
+  a.back:hover{background:rgba(217,164,65,.14)}
+  h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:24px;font-weight:700;letter-spacing:.04em}
+  .stats{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    background:rgba(244,235,221,.08);border:1px solid rgba(244,235,221,.18);
+    border-radius:12px;padding:7px 14px;font-size:13px;text-align:center;
+  }
+  .chip b{display:block;font-size:17px;color:var(--gold)}
+  button.btn{
+    font-family:inherit;font-size:14px;font-weight:700;color:#fff;
+    background:var(--accent);border:1px solid var(--accent);
+    border-radius:10px;padding:7px 16px;cursor:pointer;
+  }
+  button.btn:hover{filter:brightness(1.08)}
+
+  /* ===== 棋盘区 ===== */
+  .board-wrap{
+    margin-top:26px;background:var(--paper);color:var(--ink);
+    border-radius:20px;padding:16px;
+    box-shadow:0 14px 30px rgba(0,0,0,.28);
+  }
+  .hint{
+    text-align:center;font-size:13px;color:#6b5f4e;padding:2px 6px 12px;
+  }
+  .stage{
+    display:grid;
+    grid-template-columns:1fr 1.35fr 1fr;
+    gap:0;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    min-height:320px;
+  }
+  .shore{
+    background:linear-gradient(180deg,#FBF5EA,var(--paper2));
+    padding:14px 10px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .shore .label{
+    text-align:center;font-size:12px;letter-spacing:.2em;color:#8a7c66;
+  }
+  .shore .slots{display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center}
+  .shore.right .slots{justify-content:center}
+  .water{
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 12px),
+      linear-gradient(180deg, #4A7B9E, #35607F);
+    position:relative;
+  }
+  .water .bank{position:absolute;top:0;bottom:0;width:14px;background:#7E9B7A;border-radius:6px}
+  .water .bank.l{left:-2px}.water .bank.r{right:-2px}
+  .boat-zone{
+    position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);
+    display:flex;justify-content:center;
+  }
+  .boat{
+    background:linear-gradient(180deg,#B08B5E,#8A6F4B);
+    border-radius:14px 14px 8px 8px;
+    padding:8px 12px 10px;
+    min-width:150px;min-height:74px;
+    display:flex;align-items:flex-end;justify-content:center;gap:6px;
+    box-shadow:0 6px 12px rgba(0,0,0,.3);
+    transition:transform .5s cubic-bezier(.45,.05,.35,1);
+    position:relative;
+  }
+  .boat::after{
+    content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+    border-left:9px solid transparent;border-right:9px solid transparent;
+    border-bottom:10px solid rgba(255,255,255,.85);
+  }
+  .boat.parked-left{transform:translateY(-50%) translateX(-86%)}
+  .boat.parked-right{transform:translateY(-50%) translateX(86%)}
+  .boat .place{color:rgba(244,235,221,.75);font-size:11px;letter-spacing:.12em}
+  .row-btn{
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+    font-family:inherit;font-size:13px;font-weight:700;color:#fff;
+    background:rgba(23,50,44,.75);border:1px solid rgba(255,255,255,.35);
+    border-radius:999px;padding:6px 16px;cursor:pointer;transition:background .15s;
+  }
+  .row-btn:hover{background:rgba(23,50,44,.95)}
+
+  /* ===== 角色棋子 ===== */
+  .piece{
+    position:relative;
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg);
+    border-radius:14px;
+    padding:8px 10px;
+    cursor:default;
+    transition:transform .15s, opacity .2s;
+    box-shadow:0 3px 8px rgba(0,0,0,.18);
+  }
+  .piece .pic{width:38px;height:38px;flex:none;display:flex;align-items:center;justify-content:center}
+  .piece .pic svg{width:36px;height:36px}
+  .piece .nm{font-size:14px;font-weight:700;color:var(--paper)}
+  .piece.clickable{cursor:pointer}
+  .piece.clickable:hover{transform:translateY(-3px);box-shadow:0 8px 14px rgba(0,0,0,.28)}
+  .piece.boarding{outline:3px solid var(--gold);outline-offset:1px}
+  .piece .badge{
+    position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+    background:var(--gold);color:var(--bg);font-size:11px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .piece.ghost{opacity:.28;transform:scale(.9)}
+  .piece.small{padding:4px;border-radius:10px}
+  .piece.small .pic{width:30px;height:30px}
+  .piece.small .pic svg{width:28px;height:28px}
+  .piece.small .nm{font-size:12px}
+  .piece.eaten{animation:eaten .5s forwards}
+  @keyframes eaten{30%{transform:scale(1.25) rotate(-8deg)}100%{transform:scale(.4);opacity:0}}
+
+  /* ===== 消息条 ===== */
+  .msg{
+    margin-top:14px;border-radius:12px;padding:10px 14px;
+    font-size:13.5px;text-align:center;
+    background:rgba(23,50,44,.07);border:1px dashed var(--line);
+    color:#5b4f3e;min-height:44px;
+    transition:background .2s;
+  }
+  .msg.warn{background:rgba(200,80,46,.14);border-color:var(--accent);color:#8f3a20;font-weight:700}
+  .msg.good{background:rgba(62,124,89,.14);border-color:var(--ok);color:#2d5c42;font-weight:700}
+
+  /* ===== 弹窗 ===== */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(13,28,23,.66);
+    display:none;align-items:center;justify-content:center;z-index:50;
+    backdrop-filter:blur(3px);
+  }
+  .modal-mask.show{display:flex}
+  .modal{
+    background:var(--paper);color:var(--ink);border-radius:20px;
+    padding:34px 36px;max-width:420px;width:92%;text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.4);
+    animation:pop .3s cubic-bezier(.3,1.4,.5,1);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+  .modal h2{font-family:"Noto Serif SC",serif;font-size:26px;margin:10px 0 6px}
+  .modal p{font-size:14px;color:#5b4f3e}
+  .modal .record{color:var(--ok);font-weight:700;font-size:14px;margin-top:6px}
+  .modal .btns{margin-top:20px;display:flex;gap:10px;justify-content:center}
+  .modal button{
+    font-size:15px;padding:10px 22px;border-radius:12px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-family:inherit;font-weight:700;
+  }
+  .modal button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .modal button:hover{filter:brightness(1.06)}
+
+  @media (max-width:720px){
+    .stage{grid-template-columns:1fr;grid-template-rows:auto 190px auto}
+    .boat{min-height:56px}
+    .shore .slots{flex-direction:row;justify-content:center;flex-wrap:wrap}
+    .water .boat-zone{top:50%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="经典谜题.html">← 返回大厅</a>
+    <h1>狼羊菜过河</h1>
+    <div class="stats">
+      <div class="chip"><b id="moves">0</b>已走步数</div>
+      <div class="chip"><b>7</b>最少步数</div>
+      <button class="btn" id="resetBtn">重新开始</button>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="hint">点角色上船（船最多载农夫 + 1 位），再点「开船」。农夫离开后，狼会吃羊、羊会吃菜。</div>
+    <div class="stage">
+      <div class="shore" id="shoreL">
+        <div class="label">左 岸</div>
+        <div class="slots" id="slotsL"></div>
+      </div>
+      <div class="water">
+        <div class="bank l"></div>
+        <div class="bank r"></div>
+        <div class="boat-zone">
+          <div class="boat parked-left" id="boat">
+            <div class="slots" id="slotsBoat" style="display:flex;gap:6px"></div>
+          </div>
+        </div>
+        <button class="row-btn" id="rowBtn">开船 →</button>
+      </div>
+      <div class="shore right" id="shoreR">
+        <div class="label">右 岸</div>
+        <div class="slots" id="slotsR"></div>
+      </div>
+    </div>
+    <div class="msg" id="msg">农夫、狼、羊、菜都要安全到达右岸。想想：第一次该带谁？</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="winMask">
+  <div class="modal">
+    <h2>全员到岸！</h2>
+    <p id="winText"></p>
+    <p class="record" id="winRecord"></p>
+    <div class="btns">
+      <button id="againBtn">再来一局</button>
+      <button class="primary" id="homeBtn">返回大厅</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var ICONS = {
+    farmer: '<svg viewBox="0 0 48 48" fill="#F4EBDD"><circle cx="24" cy="17" r="6.5"/><path d="M16.5 32c0-6 3.4-9 7.5-9s7.5 3 7.5 9v8h-15z"/><path d="M12 14h24l-3 5H15z"/><path d="M24 6l-3 3h6z"/></svg>',
+    wolf:   '<svg viewBox="0 0 48 48" fill="#9DB4A8"><path d="M17 10 L11 3 v7 z"/><path d="M31 10 L37 3 v7 z"/><ellipse cx="24" cy="22" rx="12" ry="10.5"/><circle cx="20" cy="20" r="2" fill="#17322C"/><circle cx="28" cy="20" r="2" fill="#17322C"/><path d="M20 26 q4 3.5 8 0" stroke="#17322C" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    sheep:  '<svg viewBox="0 0 48 48" fill="#F4EBDD"><path d="M14 13 q-6 -3 -3 -8 q5 2 4 5 z"/><path d="M34 13 q6 -3 3 -8 q-5 2 -4 5 z"/><ellipse cx="24" cy="23" rx="13" ry="11"/><circle cx="20" cy="21" r="2" fill="#17322C"/><circle cx="28" cy="21" r="2" fill="#17322C"/><path d="M20 27 q4 3.5 8 0" stroke="#17322C" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    cabbage:'<svg viewBox="0 0 48 48" fill="#4E8C68"><circle cx="24" cy="27" r="11"/><path d="M11 27 q-9 -8 0 -15 q6 5 3 9 z" fill="#5FA07B"/><path d="M37 27 q9 -8 0 -15 q-6 5 -3 9 z" fill="#5FA07B"/><path d="M24 12 q-3 -5 0 -8 q3 3 0 8 z" fill="#6FB28A"/></svg>'
+  };
+  var NAMES = {farmer:'农夫', wolf:'狼', sheep:'羊', cabbage:'菜'};
+  var ORDER = ['farmer','wolf','sheep','cabbage'];
+
+  var state = { farmer:'L', shore:{L:{wolf:true,sheep:true,cabbage:true}, R:{wolf:false,sheep:false,cabbage:false}}, cargo:[] };
+  var moves = 0, won = false, busy = false;
+  var eatenAnim = null;
+
+  var slotsL = document.getElementById('slotsL');
+  var slotsR = document.getElementById('slotsR');
+  var slotsBoat = document.getElementById('slotsBoat');
+  var boatEl = document.getElementById('boat');
+  var msgEl = document.getElementById('msg');
+  var rowBtn = document.getElementById('rowBtn');
+  var movesEl = document.getElementById('moves');
+
+  function pieceHTML(id, extra){
+    return '<div class="piece ' + (extra||'') + '" data-id="' + id + '">' +
+           '<div class="pic">' + ICONS[id] + '</div>' +
+           '<div class="nm">' + NAMES[id] + '</div></div>';
+  }
+
+  function render(boatSide){
+    // 岸上角色（移除已上船、已被吃的）
+    ['L','R'].forEach(function(side){
+      var box = side==='L' ? slotsL : slotsR;
+      box.innerHTML = '';
+      ORDER.forEach(function(id){
+        if (state.shore[side][id]){
+          var clickable = (state.farmer===side && state.cargo.length<1 && id!=='farmer');
+          var el = document.createElement('div');
+          el.innerHTML = pieceHTML(id, (clickable?'clickable':''));
+          var node = el.firstElementChild;
+          node.addEventListener('click', function(){
+            if (clickable && !won && !busy) board(id);
+          });
+          box.appendChild(node);
+        }
+      });
+    });
+    // 船上：农夫 + cargo
+    slotsBoat.innerHTML = '';
+    var onBoat = ['farmer'].concat(state.cargo);
+    onBoat.forEach(function(id){
+      var el = document.createElement('div');
+      el.innerHTML = pieceHTML(id, 'small clickable');
+      var node = el.firstElementChild;
+      node.addEventListener('click', function(){
+        if (!won && !busy) unboard(id);
+      });
+      slotsBoat.appendChild(node);
+    });
+    // 船停靠动画
+    boatEl.classList.remove('parked-left','parked-right');
+    void boatEl.offsetWidth;
+    boatEl.classList.add(boatSide==='L' ? 'parked-left' : 'parked-right');
+    rowBtn.textContent = (boatSide==='L') ? '开船 →' : '← 开船';
+  }
+
+  function board(id){
+    // 上船：角色在农夫所在岸 && 船有空位
+    var side = state.farmer;
+    if (state.cargo.length >= 1) { setMsg('船已经满了：一次只能带一位乘客。','warn'); return; }
+    if (!state.shore[side][id]) return;
+    state.cargo.push(id);
+    state.shore[side][id] = false;
+    setMsg(NAMES[id] + ' 上了船。','');
+    render(state.farmer);
+  }
+
+  function unboard(id){
+    if (id==='farmer'){ setMsg('农夫得亲自划船，不能下船。',''); return; }
+    var i = state.cargo.indexOf(id);
+    if (i<0) return;
+    state.cargo.splice(i,1);
+    state.shore[state.farmer][id] = true;
+    setMsg(NAMES[id] + ' 下了船。','');
+    render(state.farmer);
+  }
+
+  function eatenOn(side){
+    if (state.farmer === side) return null; // 农夫在场，安全
+    var s = state.shore[side];
+    if (s.wolf && s.sheep) return '狼';
+    if (s.sheep && s.cabbage) return '羊';
+    return null;
+  }
+
+  function row(){
+    if (won || busy) return;
+    if (state.cargo.length === 0){ setMsg('让农夫独自过去？可以，但记得对岸没人照看。','warn'); }
+    var from = state.farmer;
+    var snap = JSON.stringify(state);
+    // 执行：农夫 + cargo 到对岸
+    var to = from==='L' ? 'R' : 'L';
+    state.farmer = to;
+    state.cargo.forEach(function(id){ state.shore[to][id] = true; });
+    state.cargo = [];
+    // 检查旧岸
+    var eater = eatenOn(from);
+    if (eater){
+      busy = true;
+      setMsg(eater==='狼' ? '糟糕：农夫不在，狼把羊吃了！' : '糟糕：农夫不在，羊把菜吃了！','warn');
+      // 吃掉动画：该角色消失
+      if (eater==='狼'){ animateEaten('sheep'); } else { animateEaten('cabbage'); }
+      setTimeout(function(){
+        state = JSON.parse(snap);
+        busy = false;
+        render(from);
+        setMsg('刚才那一步不算。再想想：' + (from==='L' ? '左' : '右') + '岸谁看着它们？','warn');
+      }, 900);
+      return;
+    }
+    moves++;
+    movesEl.textContent = moves;
+    render(to);
+    setMsg('第 ' + moves + ' 步：船到了' + (to==='L'?'左':'右') + '岸。','good');
+    // 胜利检查
+    var ok = state.farmer==='R' && state.shore.R.wolf && state.shore.R.sheep && state.shore.R.cabbage;
+    if (ok){
+      won = true;
+      setTimeout(win, 600);
+    }
+  }
+
+  function animateEaten(id){
+    // 让对应棋子（若在岸上或船上）播放消失动画
+    document.querySelectorAll('.piece[data-id="'+id+'"]').forEach(function(el){
+      el.classList.add('eaten');
+    });
+  }
+
+  function setMsg(text, kind){
+    msgEl.className = 'msg' + (kind ? ' ' + kind : '');
+    msgEl.textContent = text;
+  }
+
+  function win(){
+    var best = 7;
+    var text = '你用 ' + moves + ' 步把全家运到了对岸';
+    document.getElementById('winText').textContent = text + (moves<=best ? '，7 步就是最优解！' : '（最优只需 7 步）');
+    var old = localStorage.getItem('puzzle-best-river');
+    if (!old || moves < +old){
+      localStorage.setItem('puzzle-best-river', moves);
+      document.getElementById('winRecord').textContent = '新纪录：' + moves + ' 步！';
+    } else {
+      document.getElementById('winRecord').textContent = '你的纪录：' + old + ' 步';
+    }
+    document.getElementById('winMask').classList.add('show');
+  }
+
+  function reset(){
+    state = { farmer:'L', shore:{L:{wolf:true,sheep:true,cabbage:true}, R:{wolf:false,sheep:false,cabbage:false}}, cargo:[] };
+    moves = 0; won = false; busy = false;
+    movesEl.textContent = 0;
+    setMsg('农夫、狼、羊、菜都要安全到达右岸。想想：第一次该带谁？','');
+    render('L');
+  }
+
+  rowBtn.addEventListener('click', row);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('againBtn').addEventListener('click', function(){
+    document.getElementById('winMask').classList.remove('show');
+    reset();
+  });
+  document.getElementById('homeBtn').addEventListener('click', function(){
+    location.href = '经典谜题.html';
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>贪吃蛇</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M5 12c0-4 3-6 6-5.5C14 7 14 10 11 11S7 13 8 16c.7 2 3 3 5 2' stroke='%2358d3e8' stroke-width='2.2' stroke-linecap='round'/%3E%3Ccircle cx='15' cy='17' r='1.5' fill='%230d0f22' stroke='%2358d3e8' stroke-width='1.5'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(245,182,76,.08), transparent 60%);}
+  #app{width:min(94vw,440px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .scores{display:flex;gap:8px}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 14px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted);letter-spacing:.06em}
+  .score-box b{font-size:18px;font-weight:800;color:var(--amber);line-height:1.25;display:block}
+  .score-box.hi b{color:var(--cyan)}
+  .stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+    box-shadow:0 12px 40px rgba(0,0,0,.4);background:var(--surface);max-width:420px;margin:0 auto}
+  canvas{display:block;width:100%;touch-action:none}
+  .overlay{position:absolute;inset:0;display:none;z-index:5;align-items:center;justify-content:center;
+    flex-direction:column;gap:8px;background:rgba(10,12,30,.8);text-align:center;padding:20px}
+  .overlay.show{display:flex}
+  .overlay h3{font-size:26px;font-weight:800}
+  .overlay .res{font-size:13.5px;color:var(--muted)}
+  .overlay .res b{color:var(--amber)}
+  .btn{margin-top:10px;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:15px;font-weight:700;padding:10px 30px;border-radius:999px;transition:transform .12s ease}
+  .btn:active{transform:scale(.96)}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>贪吃蛇</h1><p>方向键 / WASD / 滑动</p></div>
+    <div class="scores">
+      <div class="score-box"><span class="k">分数</span><b id="score">0</b></div>
+      <div class="score-box hi"><span class="k">最高</span><b id="high">0</b></div>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="overlay">
+      <h3 style="color:var(--danger)">游戏结束</h3>
+      <div class="res">本局得分 <b id="final">0</b></div>
+      <button class="btn" id="restart">再来一局</button>
+    </div>
+  </div>
+  <p class="tip">吃食物得分变长，别撞墙、别咬到自己</p>
+</div>
+<script>
+(function(){
+  var KEY='tsnakehi';
+  var cv=document.getElementById('game'),ctx=cv.getContext('2d');
+  var N=20,CELL=20,S=N*CELL,DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=S*DPR;cv.height=S*DPR;ctx.scale(DPR,DPR);
+  var snake,dir,nextDir,food,score=0,over=false,started=false;
+  var tickAcc=0,last=0,raf=null;
+  var high=+(localStorage.getItem(KEY)||0);
+  document.getElementById('high').textContent=high;
+  function placeFood(){
+    do{
+      food={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)};
+    }while(snake.some(function(s){return s.x===food.x&&s.y===food.y;}));
+  }
+  function updateScore(){
+    score++;document.getElementById('score').textContent=score;
+    if(score>high){high=score;document.getElementById('high').textContent=high;localStorage.setItem(KEY,high);}
+  }
+  function gameOver(){
+    over=true;document.getElementById('final').textContent=score;
+    document.getElementById('overlay').classList.add('show');
+  }
+  function step(){
+    if(!started)return;
+    dir=nextDir;
+    var head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.y<0||head.x>=N||head.y>=N){gameOver();return;}
+    var body=snake.slice(0,-1);
+    for(var i=0;i<body.length;i++)
+      if(body[i].x===head.x&&body[i].y===head.y){gameOver();return;}
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){updateScore();placeFood();}
+    else snake.pop();
+  }
+  function draw(){
+    ctx.clearRect(0,0,S,S);
+    ctx.fillStyle='#10132a';ctx.fillRect(0,0,S,S);
+    ctx.strokeStyle='rgba(255,255,255,.045)';ctx.lineWidth=1;
+    for(var i=0;i<=N;i++){
+      ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,S);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(S,i*CELL);ctx.stroke();
+    }
+    // 食物
+    ctx.fillStyle='#ff5d5d';
+    ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL*0.36,0,6.283);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.25)';
+    ctx.beginPath();ctx.arc(food.x*CELL+CELL*0.36,food.y*CELL+CELL*0.36,CELL*0.1,0,6.283);ctx.fill();
+    // 蛇身
+    for(var k=snake.length-1;k>=0;k--){
+      var s=snake[k];
+      var g=ctx.createRadialGradient(s.x*CELL+CELL/2,s.y*CELL+CELL/2,2,s.x*CELL+CELL/2,s.y*CELL+CELL/2,CELL*0.75);
+      g.addColorStop(0,k===0?'#8be8ff':'#58d3e8');g.addColorStop(1,k===0?'#2aa9c9':'#1d7f9c');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.roundRect(s.x*CELL+1.5,s.y*CELL+1.5,CELL-3,CELL-3,6);ctx.fill();
+      if(k===0){
+        ctx.fillStyle='#0d0f22';
+        var ex=dir.x,ey=dir.y,px=s.x*CELL+CELL/2,py=s.y*CELL+CELL/2;
+        ctx.beginPath();ctx.arc(px+ex*6-ey*4,py+ey*6+ex*4,2.4,0,6.283);ctx.fill();
+        ctx.beginPath();ctx.arc(px+ex*6+ey*4,py+ey*6-ex*4,2.4,0,6.283);ctx.fill();
+      }
+    }
+    if(!ctx.roundRect)ctx.roundRect=function(x,y,w,h,r){this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();};
+  }
+  function loop(t){
+    raf=requestAnimationFrame(loop);
+    if(over)return;
+    var dt=t-(last||t);last=t;
+    tickAcc+=dt;
+    var speed=Math.max(65,140-score*3);
+    while(tickAcc>=speed){tickAcc-=speed;step();if(over)break;}
+    draw();
+  }
+  function turn(dx,dy){
+    if(dx===-dir.x&&dy===-dir.y)return;
+    nextDir={x:dx,y:dy};started=true;
+  }
+  function onKey(e){
+    var map={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+    var m=map[e.key];
+    if(m){e.preventDefault();turn(m[0],m[1]);}
+  }
+  var down=null;
+  function onDown(e){down={x:e.clientX,y:e.clientY};}
+  function onUp(e){
+    if(down===null)return;
+    var dx=e.clientX-down.x,dy=e.clientY-down.y,adx=Math.abs(dx),ady=Math.abs(dy);
+    down=null;
+    if(Math.max(adx,ady)<24)return;
+    if(adx>ady)turn(dx>0?1:-1,0);else turn(0,dy>0?1:-1);
+  }
+  function init(){
+    snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];
+    dir={x:1,y:0};nextDir={x:1,y:0};
+    score=0;over=false;started=false;tickAcc=0;last=0;
+    placeFood();
+    document.getElementById('score').textContent=0;
+    document.getElementById('high').textContent=+(localStorage.getItem(KEY)||0);
+    document.getElementById('overlay').classList.remove('show');
+    draw();
+  }
+  document.getElementById('restart').addEventListener('click',init);
+  window.addEventListener('keydown',onKey);
+  cv.addEventListener('pointerdown',onDown);
+  cv.addEventListener('pointerup',onUp);
+  init();
+  loop(0);
+})();
+</script>
+</body>
+</html>

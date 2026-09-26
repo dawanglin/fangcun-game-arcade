@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>称球问题 · 经典谜题收藏馆</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317322C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23F4EBDD' font-family='Georgia'%3E%3F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#2B2118;
+    --paper:#F4EBDD;
+    --paper2:#E9DEC9;
+    --bg:#17322C;
+    --bg2:#1F3D35;
+    --accent:#C8502E;
+    --gold:#D9A441;
+    --line:#C9BCA4;
+    --ok:#3E7C59;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1000px 520px at 88% -8%, rgba(216,164,65,.13), transparent 60%),
+      var(--bg);
+    color:var(--paper);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px}
+
+  /* ===== 顶栏 ===== */
+  .topbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid rgba(244,235,221,.16);
+  }
+  a.back{
+    color:var(--gold);text-decoration:none;font-size:14px;
+    border:1px solid rgba(217,164,65,.4);border-radius:999px;
+    padding:6px 14px;transition:background .15s;
+  }
+  a.back:hover{background:rgba(217,164,65,.14)}
+  h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:24px;font-weight:700;letter-spacing:.04em}
+  .stats{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    background:rgba(244,235,221,.08);border:1px solid rgba(244,235,221,.18);
+    border-radius:12px;padding:7px 14px;font-size:13px;text-align:center;
+  }
+  .chip b{display:block;font-size:17px;color:var(--gold)}
+  button.btn{
+    font-family:inherit;font-size:14px;font-weight:700;color:#fff;
+    background:var(--accent);border:1px solid var(--accent);
+    border-radius:10px;padding:7px 16px;cursor:pointer;
+  }
+  button.btn:hover{filter:brightness(1.08)}
+
+  /* ===== 棋盘 ===== */
+  .board-wrap{
+    margin-top:26px;background:var(--paper);color:var(--ink);
+    border-radius:20px;padding:16px;
+    box-shadow:0 14px 30px rgba(0,0,0,.28);
+  }
+  .hint{
+    text-align:center;font-size:13px;color:#6b5f4e;padding:2px 6px 10px;
+  }
+
+  /* 球选择区 */
+  .balls{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:10px;
+    padding:12px;background:var(--paper2);border:1px solid var(--line);border-radius:14px;
+  }
+  .ball{
+    position:relative;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #F2D088, #D9A441 58%, #A87E2E);
+    border:1px solid #8A6524;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:15px;color:#3d2c10;
+    cursor:pointer;transition:transform .12s, box-shadow .12s;
+    box-shadow:0 3px 6px rgba(0,0,0,.2);
+    user-select:none;
+  }
+  .ball:hover{transform:translateY(-3px)}
+  .ball.sel-left{outline:3px solid var(--ok);outline-offset:2px}
+  .ball.sel-right{outline:3px solid var(--accent);outline-offset:2px}
+  .ball .hint-tag{
+    position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
+    font-size:10px;font-weight:700;color:var(--bg);background:var(--gold);
+    border-radius:999px;padding:1px 7px;white-space:nowrap;
+  }
+
+  /* 天平 */
+  .scale{
+    margin-top:18px;display:flex;align-items:flex-end;justify-content:center;
+    position:relative;
+  }
+  .pan{
+    flex:1;max-width:300px;min-height:120px;
+    background:linear-gradient(180deg,#FBF5EA,var(--paper2));
+    border:1px solid var(--line);border-radius:12px 12px 8px 8px;
+    padding:10px;display:flex;align-items:flex-end;justify-content:center;gap:6px;flex-wrap:wrap;
+    transition:transform .5s cubic-bezier(.45,.05,.35,1);
+  }
+  .pan.l-down{transform:translateY(14px)}
+  .pan.r-down{transform:translateY(14px)}
+  .pan .empty{font-size:12px;color:#a3947e;padding-bottom:6px}
+  .pan .mini{
+    width:30px;height:30px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #F2D088, #D9A441 58%, #A87E2E);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:900;color:#3d2c10;
+  }
+  .pivot{
+    width:26px;margin:0 10px;position:relative;
+    background:linear-gradient(180deg,#B08B5E,#8A6F4B);
+    border-radius:6px 6px 2px 2px;
+    align-self:stretch;min-height:120px;
+  }
+  .pivot::after{
+    content:'';position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    border-left:14px solid transparent;border-right:14px solid transparent;
+    border-bottom:14px solid #8A6F4B;
+  }
+  .result-tag{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--bg);color:var(--paper);
+    font-size:13px;font-weight:700;padding:6px 14px;border-radius:999px;
+    opacity:0;transition:opacity .3s;white-space:nowrap;z-index:5;
+    border:1px solid var(--gold);pointer-events:none;
+  }
+  .result-tag.show{opacity:1}
+
+  /* 控制 */
+  .ctl{
+    margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  }
+  .ctl .lbl{font-size:13px;color:#6b5f4e;margin-right:auto}
+  button.action{
+    font-family:inherit;font-size:14px;font-weight:700;
+    background:var(--accent);border:1px solid var(--accent);color:#fff;
+    border-radius:10px;padding:9px 20px;cursor:pointer;
+  }
+  button.action:hover{filter:brightness(1.08)}
+  button.action.ghost{background:var(--bg2);border-color:var(--bg2);color:var(--paper)}
+  button.action:disabled{opacity:.4;cursor:not-allowed}
+
+  /* 历史 */
+  .history{
+    margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;
+  }
+  .history .h-title{font-size:13px;font-weight:700;color:#6b5f4e;margin-bottom:8px}
+  .history ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .history li{
+    font-size:13px;background:var(--paper2);border:1px solid var(--line);
+    border-radius:9px;padding:6px 12px;color:#4d4235;
+  }
+  .history li b{color:var(--accent)}
+
+  /* 提交面板 */
+  .submit-panel{
+    margin-top:14px;border:1px solid var(--gold);border-radius:14px;
+    background:rgba(217,164,65,.08);padding:14px;
+  }
+  .submit-panel .sp-title{font-weight:700;font-size:14px;margin-bottom:8px;color:var(--ink)}
+  .sp-balls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .sp-ball{
+    width:36px;height:36px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #F2D088, #D9A441 58%, #A87E2E);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:13px;color:#3d2c10;cursor:pointer;
+    border:2px solid transparent;
+  }
+  .sp-ball.pick{outline:3px solid var(--accent);outline-offset:1px}
+  .sp-dir{display:flex;gap:8px}
+  .sp-dir button{
+    font-family:inherit;font-size:13px;font-weight:700;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink);
+    border-radius:9px;padding:6px 14px;cursor:pointer;
+  }
+  .sp-dir button:hover{border-color:var(--gold)}
+  .sp-dir button:disabled{opacity:.4;cursor:not-allowed}
+
+  /* 弹窗 */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(13,28,23,.66);
+    display:none;align-items:center;justify-content:center;z-index:50;
+    backdrop-filter:blur(3px);
+  }
+  .modal-mask.show{display:flex}
+  .modal{
+    background:var(--paper);color:var(--ink);border-radius:20px;
+    padding:34px 36px;max-width:440px;width:92%;text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.4);
+    animation:pop .3s cubic-bezier(.3,1.4,.5,1);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+  .modal h2{font-family:"Noto Serif SC",serif;font-size:26px;margin:6px 0}
+  .modal p{font-size:14px;color:#5b4f3e;line-height:1.8}
+  .modal .record{color:var(--ok);font-weight:700;font-size:14px;margin-top:8px}
+  .modal .btns{margin-top:20px;display:flex;gap:10px;justify-content:center}
+  .modal button{
+    font-size:15px;padding:10px 22px;border-radius:12px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-family:inherit;font-weight:700;
+  }
+  .modal button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .modal button:hover{filter:brightness(1.06)}
+
+  @media (max-width:720px){
+    .balls{grid-template-columns:repeat(4,1fr)}
+    .scale{flex-direction:column;align-items:stretch}
+    .pan{min-height:90px}
+    .pivot{height:14px;min-height:14px;align-self:auto;margin:8px 0}
+    .pivot::after{top:auto;bottom:-14px;border-left:14px solid transparent;border-right:14px solid transparent;border-top:14px solid #8A6F4B;border-bottom:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="经典谜题.html">← 返回大厅</a>
+    <h1>称球问题</h1>
+    <div class="stats">
+      <div class="chip"><b id="used">0</b>/3 已称</div>
+      <div class="chip"><b>3</b>次数上限</div>
+      <button class="btn" id="resetBtn">重新开始</button>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="hint">12 个球中混进 1 个重量异常的——<b>不知道它偏重还是偏轻</b>。点球放到天平左右盘（再点循环切换），称重，3 次之内找出它。</div>
+
+    <div class="balls" id="balls"></div>
+
+    <div class="scale">
+      <div class="pan" id="panL"><div class="empty">左盘（空）</div></div>
+      <div class="pivot"></div>
+      <div class="pan" id="panR"><div class="empty">右盘（空）</div></div>
+      <div class="result-tag" id="resultTag"></div>
+    </div>
+
+    <div class="ctl">
+      <span class="lbl">点球切换：未选 → 左盘 → 右盘 → 未选</span>
+      <button class="action ghost" id="guessBtn">我找到异常球了</button>
+      <button class="action" id="weighBtn">称重</button>
+    </div>
+
+    <div class="submit-panel" id="submitPanel" style="display:none">
+      <div class="sp-title">指认异常球：先选一个球，再选它是偏重还是偏轻</div>
+      <div class="sp-balls" id="spBalls"></div>
+      <div class="sp-dir">
+        <button id="dirHeavy">偏重</button>
+        <button id="dirLight">偏轻</button>
+      </div>
+    </div>
+
+    <div class="history">
+      <div class="h-title">称重记录</div>
+      <ul id="history"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="winMask">
+  <div class="modal">
+    <h2 id="modalTitle">找到了！</h2>
+    <p id="modalText"></p>
+    <p class="record" id="modalRecord"></p>
+    <div class="btns">
+      <button id="againBtn">再来一局</button>
+      <button class="primary" id="homeBtn">返回大厅</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var N = 12;
+  var MAX = 3;
+  var state = {
+    odd: 0, heavy: true,
+    place: new Array(N).fill(0),  // 0 未选 / 1 左 / 2 右
+    used: 0,
+    over: false,                  // 次数用完
+    submitting: false,
+    pick: -1                      // 提交面板选中的球
+  };
+  var historyLog = [];
+
+  var ballsEl = document.getElementById('balls');
+  var panL = document.getElementById('panL');
+  var panR = document.getElementById('panR');
+  var usedEl = document.getElementById('used');
+  var historyEl = document.getElementById('history');
+  var resultTag = document.getElementById('resultTag');
+  var submitPanel = document.getElementById('submitPanel');
+
+  function reset(){
+    state.odd = 1 + Math.floor(Math.random()*N);
+    state.heavy = Math.random() < 0.5;
+    state.place = new Array(N).fill(0);
+    state.used = 0;
+    state.over = false;
+    state.submitting = false;
+    state.pick = -1;
+    historyLog = [];
+    usedEl.textContent = 0;
+    resultTag.className = 'result-tag';
+    submitPanel.style.display = 'none';
+    document.getElementById('guessBtn').disabled = false;
+    renderAll();
+  }
+
+  function renderAll(){
+    renderBalls();
+    renderPans();
+    renderHistory();
+    renderSubmit();
+  }
+
+  function renderBalls(){
+    ballsEl.innerHTML = '';
+    for (var i=0;i<N;i++){
+      var b = document.createElement('div');
+      var cls = 'ball';
+      var tag = '';
+      if (state.place[i] === 1){ cls += ' sel-left'; tag = '<span class="hint-tag">左</span>'; }
+      if (state.place[i] === 2){ cls += ' sel-right'; tag = '<span class="hint-tag">右</span>'; }
+      b.className = cls;
+      b.innerHTML = (i+1) + tag;
+      b.addEventListener('click', function(j){
+        return function(){ cycleBall(j); };
+      }(i));
+      ballsEl.appendChild(b);
+    }
+  }
+
+  function cycleBall(i){
+    if (state.over || state.submitting) return;
+    state.place[i] = (state.place[i] + 1) % 3;
+    renderBalls();
+  }
+
+  function renderPans(){
+    var l = [], r = [];
+    for (var i=0;i<N;i++){
+      if (state.place[i]===1) l.push(i);
+      if (state.place[i]===2) r.push(i);
+    }
+    panL.classList.remove('l-down','r-down');
+    panR.classList.remove('l-down','r-down');
+    panL.innerHTML = l.length ? l.map(function(i){ return '<div class="mini">'+(i+1)+'</div>'; }).join('') : '<div class="empty">左盘（空）</div>';
+    panR.innerHTML = r.length ? r.map(function(i){ return '<div class="mini">'+(i+1)+'</div>'; }).join('') : '<div class="empty">右盘（空）</div>';
+  }
+
+  function weight(i){
+    return 1 + (i===state.odd ? (state.heavy ? 0.6 : -0.6) : 0);
+  }
+
+  function weigh(){
+    if (state.over || state.submitting) return;
+    var l = [], r = [];
+    for (var i=0;i<N;i++){
+      if (state.place[i]===1) l.push(i);
+      if (state.place[i]===2) r.push(i);
+    }
+    if (!l.length || !r.length){
+      flashResult('两边都要放球', '');
+      return;
+    }
+    var ls = l.reduce(function(s,i){ return s+weight(i); }, 0);
+    var rs = r.reduce(function(s,i){ return s+weight(i); }, 0);
+    var res = Math.abs(ls-rs) < 1e-9 ? '平衡' : (ls>rs ? '左重' : '右重');
+    state.used++;
+    usedEl.textContent = state.used;
+    historyLog.unshift('第 ' + state.used + ' 称：' + l.map(function(i){return i+1;}).join(',') + '  vs  ' + r.map(function(i){return i+1;}).join(',') + '  →  <b>' + res + '</b>');
+    renderHistory();
+    panL.classList.remove('l-down','r-down');
+    panR.classList.remove('l-down','r-down');
+    if (res==='左重'){ panL.classList.add('l-down'); }
+    if (res==='右重'){ panR.classList.add('r-down'); }
+    flashResult(res, '称重结果');
+    if (state.used >= MAX){
+      state.over = true;
+      openSubmit();
+    }
+  }
+
+  function flashResult(text){
+    resultTag.textContent = text;
+    resultTag.className = 'result-tag show';
+    setTimeout(function(){ resultTag.className = 'result-tag'; }, 1600);
+  }
+
+  function renderHistory(){
+    historyEl.innerHTML = historyLog.length
+      ? historyLog.map(function(h){ return '<li>' + h + '</li>'; }).join('')
+      : '<li>还没有称重记录。第一次可以试试 1–4 放左盘、5–8 放右盘。</li>';
+  }
+
+  function openSubmit(){
+    submitPanel.style.display = 'block';
+    document.getElementById('guessBtn').disabled = true;
+    renderSubmit();
+  }
+
+  function renderSubmit(){
+    var box = document.getElementById('spBalls');
+    box.innerHTML = '';
+    for (var i=0;i<N;i++){
+      var b = document.createElement('div');
+      b.className = 'sp-ball' + (state.pick===i?' pick':'');
+      b.textContent = i+1;
+      b.addEventListener('click', function(j){
+        return function(){ state.pick = j; renderSubmit(); };
+      }(i));
+      box.appendChild(b);
+    }
+    document.getElementById('dirHeavy').disabled = state.pick < 0;
+    document.getElementById('dirLight').disabled = state.pick < 0;
+  }
+
+  document.getElementById('guessBtn').addEventListener('click', function(){
+    if (state.over || state.submitting) return;
+    state.submitting = true;
+    openSubmit();
+    flashResult('只剩最后一步：指认它');
+  });
+
+  function submitGuess(dir){
+    var pick = state.pick;
+    if (pick < 0) return;
+    var win = (pick === state.odd) && (dir === (state.heavy ? 'heavy':'light'));
+    var mask = document.getElementById('winMask');
+    document.getElementById('modalTitle').textContent = win ? '称出来了！' : '差一点……';
+    document.getElementById('modalText').innerHTML = win
+      ? '第 ' + state.odd + ' 号球确实偏' + (state.heavy?'重':'轻') + '，你用了 ' + state.used + ' 次称重。'
+      : '正确答案：第 ' + state.odd + ' 号球偏' + (state.heavy?'重':'轻') + '。你指认的是第 ' + (pick+1) + ' 号球偏' + (dir==='heavy'?'重':'轻') + '。';
+    if (win){
+      var old = localStorage.getItem('puzzle-best-weighing');
+      if (!old || state.used < +old){
+        localStorage.setItem('puzzle-best-weighing', state.used);
+        document.getElementById('modalRecord').textContent = '新纪录：' + state.used + ' 次称出！';
+      } else {
+        document.getElementById('modalRecord').textContent = '你的纪录：' + old + ' 次';
+      }
+    } else {
+      document.getElementById('modalRecord').textContent = '12 球、不知轻重，天平 3 次一定能找出来——再试一次？';
+    }
+    mask.classList.add('show');
+  }
+
+  document.getElementById('dirHeavy').addEventListener('click', function(){ submitGuess('heavy'); });
+  document.getElementById('dirLight').addEventListener('click', function(){ submitGuess('light'); });
+
+  document.getElementById('weighBtn').addEventListener('click', weigh);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('againBtn').addEventListener('click', function(){
+    document.getElementById('winMask').classList.remove('show');
+    reset();
+  });
+  document.getElementById('homeBtn').addEventListener('click', function(){
+    location.href = '经典谜题.html';
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>

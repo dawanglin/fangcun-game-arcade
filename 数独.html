@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数独</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cg fill='%2358d3e8'%3E%3Crect x='5' y='5' width='4' height='4'/%3E%3Crect x='13' y='13' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23f5b64c'%3E%3Crect x='13' y='5' width='4' height='4'/%3E%3Crect x='5' y='13' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%)}
+  #app{width:min(94vw,460px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
+  .board{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;background:var(--surface2);border-radius:12px;padding:6px}
+  .cell{aspect-ratio:1;border-radius:4px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(13px,4.5vw,20px);font-weight:700;cursor:pointer}
+  .cell.giv{color:var(--cyan)}.cell.sel{outline:2px solid var(--amber)}.cell.err{color:var(--danger)!important;background:rgba(255,93,93,.25)!important}
+  .cell.gen{color:var(--text)}
+  .cell.br{border-left:3px solid var(--amber)}.cell.bb{border-top:3px solid var(--amber)}
+  .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .pad button{border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;
+    font-size:17px;font-weight:700;padding:11px;border-radius:10px;cursor:pointer}
+  .pad button:active{transform:scale(.95)}
+  .tools{display:flex;gap:8px;margin-top:10px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;
+    font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:6px}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:320px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}.overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>数独</h1><p>9×9 经典 · 休闲生成</p></div>
+    <div class="score-box"><span class="k">难度</span><b id="lvl">中</b></div>
+  </header>
+  <div class="panel"><div class="board" id="board"></div></div>
+  <div class="panel">
+    <div class="pad" id="pad"></div>
+    <div class="tools">
+      <button id="erase">清除</button>
+      <button id="easy">简单</button>
+      <button id="mid">中等</button>
+      <button id="hard">困难</button>
+      <button id="new">新局</button>
+    </div>
+    <p class="tip">每行、每列、每个 3×3 宫填入 1-9 且不重复</p>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 style="color:#57c96b">数独完成！</h2><div class="sub" id="os">全部正确</div><button class="btn" id="restart">再来一局</button></div></div>
+<script>
+(function(){
+  var board=[],giv=[],sel=-1,diff='mid';
+  function sh(a){for(var i=a.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[k];a[k]=t;}return a;}
+  function range(n){var a=[];for(var i=0;i<n;i++)a.push(i);return a;}
+  function gen(){
+    var rows=[];
+    for(var i=0;i<9;i++){var r=[];for(var j=0;j<9;j++)r.push(((i*3+Math.floor(i/3)+j)%9)+1);rows.push(r);}
+    var perm=sh([1,2,3,4,5,6,7,8,9]);
+    rows=rows.map(function(r){return r.map(function(v){return perm[v-1];});});
+    [0,3,6].forEach(function(g){var a=sh([0,1,2]),t=rows[g+a[0]];rows[g+a[0]]=rows[g+a[1]];rows[g+a[1]]=t;});
+    var bg=sh([0,1,2]),nr=[];
+    bg.forEach(function(g){nr.push(rows[g*3],rows[g*3+1],rows[g*3+2]);});
+    rows=nr;
+    var holes=diff==='easy'?32:diff==='hard'?52:42;
+    var hit={};sh(range(81)).slice(0,holes).forEach(function(x){hit[x]=1;});
+    giv=rows.map(function(r){return r.slice();});
+    board=rows.map(function(r,i){return r.map(function(v,j){return hit[i*9+j]?0:v;});});
+  }
+  function render(){
+    var el=document.getElementById('board');el.innerHTML='';
+    for(var i=0;i<9;i++)for(var j=0;j<9;j++){
+      var d=document.createElement('div');
+      d.className='cell'+(giv[i][j]?' giv':(board[i][j]?' gen':''))+(i===sel?' sel':'')+(j%3===0?' br':'')+(i%3===0?' bb':'');
+      d.textContent=board[i][j]||'';
+      (function(r,c){d.addEventListener('click',function(){sel=r*9+c;render();});})(i,j);
+      el.appendChild(d);
+    }
+  }
+  function checkCell(i,j){
+    if(!board[i][j])return false;
+    for(var k=0;k<9;k++){
+      if(k!==j&&board[i][k]===board[i][j])return true;
+      if(k!==i&&board[k][j]===board[i][j])return true;
+      var br=Math.floor(i/3)*3+Math.floor(k/3),bc=Math.floor(j/3)*3+(k%3);
+      if((br!==i||bc!==j)&&board[br][bc]===board[i][j])return true;
+    }
+    return false;
+  }
+  function check(){
+    var bad=0,full=true;
+    for(var i=0;i<9;i++)for(var j=0;j<9;j++){
+      var e=document.querySelectorAll('#board .cell')[(i*9+j)];
+      if(!board[i][j]){full=false;continue;}
+      if(checkCell(i,j)){e.classList.add('err');bad++;}
+    }
+    if(full&&bad===0){
+      document.getElementById('os').textContent='用时见真章，恭喜全对！';
+      document.getElementById('overlay').classList.add('show');
+    }
+  }
+  function fill(n){
+    if(sel<0)return;
+    var i=Math.floor(sel/9),j=sel%9;
+    if(giv[i][j])return;
+    board[i][j]=n;render();
+    if(n)check();
+  }
+  var pad=document.getElementById('pad');
+  for(var n=1;n<=9;n++){
+    (function(v){var b=document.createElement('button');b.textContent=v;
+      b.addEventListener('click',function(){fill(v);});pad.appendChild(b);})(n);
+  }
+  var eb=document.createElement('button');eb.textContent='×';eb.style.color='var(--danger)';
+  eb.addEventListener('click',function(){fill(0);});pad.appendChild(eb);
+  document.getElementById('erase').addEventListener('click',function(){fill(0);});
+  document.getElementById('easy').addEventListener('click',function(){diff='easy';document.getElementById('lvl').textContent='简单';gen();sel=-1;render();});
+  document.getElementById('mid').addEventListener('click',function(){diff='mid';document.getElementById('lvl').textContent='中等';gen();sel=-1;render();});
+  document.getElementById('hard').addEventListener('click',function(){diff='hard';document.getElementById('lvl').textContent='困难';gen();sel=-1;render();});
+  document.getElementById('new').addEventListener('click',function(){gen();sel=-1;render();});
+  document.getElementById('restart').addEventListener('click',function(){document.getElementById('overlay').classList.remove('show');gen();sel=-1;render();});
+  gen();render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>骑士与骗子</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M7 5v14M17 5v14' stroke='%2358d3e8' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M8 8l8 8M16 8l-8 8' stroke='%23f5b64c' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%)}
+  #app{width:min(94vw,460px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber);cursor:pointer}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .intro{font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:12px}
+  .person{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .person .nm{font-weight:800;font-size:15px;margin-bottom:4px}
+  .person .say{font-size:13px;color:var(--text);line-height:1.8;margin-bottom:10px}
+  .person .say em{font-style:normal;color:var(--amber)}
+  .btns{display:flex;gap:8px}
+  .btns button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-family:inherit;
+    font-size:13px;padding:9px;border-radius:10px;cursor:pointer}
+  .btns button.on-k{background:var(--cyan);color:#062a30;font-weight:700;border-color:var(--cyan)}
+  .btns button.on-l{background:var(--danger);color:#fff;font-weight:700;border-color:var(--danger)}
+  .tools{display:flex;gap:8px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:10px;line-height:1.8}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:340px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}.overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px;line-height:2}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>骑士与骗子</h1><p>骑士只说真话 · 骗子只说假话</p></div>
+    <div class="score-box"><span class="k">新题</span><b id="newbtn">换题</b></div>
+  </header>
+  <div class="panel">
+    <p class="intro">岛上有 4 个人：<b style="color:var(--cyan)">骑士</b>永远说真话，<b style="color:var(--danger)">骗子</b>永远说假话。根据他们说的话，判断每个人是骑士还是骗子。</p>
+    <div id="people"></div>
+    <div class="tools"><button id="check">检查答案</button><button id="new">换一题</button></div>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 id="ot" style="color:#57c96b">全对！</h2><div class="sub" id="os"></div><button class="btn" id="restart">再来一题</button></div></div>
+<script>
+(function(){
+  var NAMES=['A','B','C','D'],people=[],guess={};
+  function sh(a){for(var i=a.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[k];a[k]=t;}return a;}
+  function gen(){
+    var roles=sh([1,1,2,2]); // 1骑士 2骗子
+    people=NAMES.map(function(n,i){return {n:n,r:roles[i],say:''};});
+    var TEMPLATES=[
+      function(t,X){return [t.n+' 说：「'+X.n+' 是骑士」',X.r===1];},
+      function(t,X){return [t.n+' 说：「'+X.n+' 是骗子」',X.r===2];},
+      function(t,X){return [t.n+' 说：「我和 '+X.n+' 身份相同」',t.r===X.r];},
+      function(t,X){return [t.n+' 说：「我和 '+X.n+' 身份不同」',t.r!==X.r];}
+    ];
+    // 构造：对每人选模板，使陈述真假匹配身份
+    people.forEach(function(t){
+      var cands=[];
+      people.forEach(function(X){
+        if(X===t)return;
+        TEMPLATES.forEach(function(fn){cands.push(fn(t,X));});
+      });
+      sh(cands);
+      var chosen=cands.find(function(c){return c[1]===(t.r===1);});
+      if(!chosen)chosen=cands[0];
+      t.say=chosen[0];
+    });
+    guess={};people.forEach(function(p){guess[p.n]=0;});
+  }
+  function render(){
+    var el=document.getElementById('people');el.innerHTML='';
+    people.forEach(function(p){
+      var d=document.createElement('div');d.className='person';
+      var nm=document.createElement('div');nm.className='nm';nm.textContent='人物 '+p.n;
+      var say=document.createElement('div');say.className='say';
+      say.innerHTML=p.say.replace(/「([^」]*)」/,'<em>「$1」</em>');
+      var btns=document.createElement('div');btns.className='btns';
+      var kb=document.createElement('button');kb.textContent='骑士';
+      var lb=document.createElement('button');lb.textContent='骗子';
+      if(guess[p.n]===1)kb.classList.add('on-k');
+      if(guess[p.n]===2)lb.classList.add('on-l');
+      kb.addEventListener('click',function(){guess[p.n]=guess[p.n]===1?0:1;render();});
+      lb.addEventListener('click',function(){guess[p.n]=guess[p.n]===2?0:2;render();});
+      btns.appendChild(kb);btns.appendChild(lb);
+      d.appendChild(nm);d.appendChild(say);d.appendChild(btns);
+      el.appendChild(d);
+    });
+  }
+  function check(){
+    var ok=true;
+    people.forEach(function(p){if(guess[p.n]!==p.r)ok=false;});
+    if(ok){
+      document.getElementById('os').innerHTML=people.map(function(p){return p.n+'：'+(p.r===1?'骑士':'骗子');}).join('<br>');
+      document.getElementById('overlay').classList.add('show');
+    }else alert('还有判断不对，想想谁的证词能互相印证');
+  }
+  function next(){document.getElementById('overlay').classList.remove('show');gen();render();}
+  document.getElementById('check').addEventListener('click',check);
+  document.getElementById('new').addEventListener('click',next);
+  document.getElementById('newbtn').addEventListener('click',next);
+  document.getElementById('restart').addEventListener('click',next);
+  gen();render();
+})();
+</script>
+</body>
+</html>

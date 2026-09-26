@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人生重开模拟器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23f5b64c'/%3E%3Cpath d='M12 7c2.5 2.5 2.5 7.5 0 10-2.5-2.5-2.5-7.5 0-10Z' fill='%230d0f22'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(245,182,76,.10), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(88,211,232,.08), transparent 60%);}
+  #app{width:min(94vw,460px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 14px}
+  .brand h1{font-size:22px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .hint{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .attr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .attr .nm{width:44px;font-size:14px;color:var(--muted)}
+  .attr button{width:34px;height:30px;border:1px solid var(--line);background:var(--surface2);color:var(--text);
+    font-size:16px;border-radius:8px;cursor:pointer;font-family:inherit}
+  .attr button:active{transform:scale(.94)}
+  .attr b{width:34px;text-align:center;font-size:20px;color:var(--amber)}
+  .pts{font-size:13px;color:var(--muted);margin:4px 0 16px}
+  .pts b{color:var(--cyan)}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:16px;font-weight:700;padding:12px;border-radius:12px;transition:transform .12s ease}
+  .btn:active{transform:scale(.98)}
+  .agebar{font-size:14px;color:var(--muted);margin-bottom:12px}
+  .agebar b{color:var(--amber);font-size:22px}
+  #log{background:var(--surface2);border:1px solid var(--line);border-radius:12px;
+    padding:14px;height:340px;overflow-y:auto;font-size:13.5px;line-height:2}
+  #log div{animation:fade .3s ease}
+  #log .bad{color:#ff9d9d}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .ctrl{display:flex;gap:10px;margin-top:12px}
+  .ctrl button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--text);
+    font-family:inherit;font-size:14px;padding:9px;border-radius:10px;cursor:pointer}
+  .ctrl button:hover{border-color:rgba(255,255,255,.3)}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;
+    background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}
+  .overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:28px;max-width:340px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800;color:var(--danger)}
+  .overlay .life{font-size:15px;color:var(--muted);margin:10px 0}
+  .overlay .life b{color:var(--amber);font-size:20px}
+  .overlay .sum{font-size:12.5px;color:var(--muted);line-height:2;margin-bottom:16px}
+  .overlay .btn{margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>人生重开模拟器</h1><p>分配属性，随机过一生</p></div>
+  </header>
+
+  <div class="panel" id="setup">
+    <p class="hint">总共 15 点属性，任意分配到五个维度（0-10），点「开始人生」</p>
+    <div class="attr"><span class="nm">颜值</span><button data-k="yan" data-d="-1">-</button><b id="v-yan">3</b><button data-k="yan" data-d="1">+</button></div>
+    <div class="attr"><span class="nm">智力</span><button data-k="zh" data-d="-1">-</button><b id="v-zh">3</b><button data-k="zh" data-d="1">+</button></div>
+    <div class="attr"><span class="nm">体质</span><button data-k="ti" data-d="-1">-</button><b id="v-ti">3</b><button data-k="ti" data-d="1">+</button></div>
+    <div class="attr"><span class="nm">家境</span><button data-k="jia" data-d="-1">-</button><b id="v-jia">3</b><button data-k="jia" data-d="1">+</button></div>
+    <div class="attr"><span class="nm">快乐</span><button data-k="kuai" data-d="-1">-</button><b id="v-kuai">3</b><button data-k="kuai" data-d="1">+</button></div>
+    <p class="pts">剩余点数 <b id="left">0</b></p>
+    <button class="btn" id="start">开始人生</button>
+  </div>
+
+  <div class="panel" id="game" hidden>
+    <div class="agebar">第 <b id="age">0</b> 岁</div>
+    <div id="log"></div>
+    <div class="ctrl">
+      <button id="pause">暂停</button>
+      <button id="speed">加速</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>人生落幕</h2>
+    <div class="life">享年 <b id="o-age">0</b> 岁</div>
+    <div class="sum" id="o-cause"></div>
+    <div class="sum" id="o-attrs"></div>
+    <button class="btn" id="restart">重开一生</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var attrs={yan:3,zh:3,ti:3,jia:3,kuai:3},LEFT=0;
+  var GOOD=[
+    ['你学会了走路，摔了三次但笑得很开心','邻居阿姨夸你长得可爱','你开始追问「天为什么是蓝的」','幼儿园画画比赛得了小红花','你学会了自己穿鞋'],
+    ['考试拿了第一名，全家加餐','你长高了半个头','和同学组队打游戏到深夜','作文被老师当范文朗读','你第一次独自骑车上学'],
+    ['找到一份不错的工作','第一次出国旅行','坚持健身半年，腹肌初现','升职加薪，请同事吃饭','你养了一只猫，叫「发财」'],
+    ['买下人生第一套房','体检各项指标正常','孩子考上了理想的学校','你学会做菜，成了家里的大厨','和老友重聚，聊到深夜'],
+    ['每天散步三公里，风雨无阻','和老朋友下棋聊天','孙子孙女绕膝跑','你迷上了园艺，种出满园花','整理旧相册，往事历历在目']
+  ];
+  var BAD=[
+    ['一场重感冒，躺了一周','半夜踢被子，着了凉','被小狗追着跑，摔破了膝盖','幼儿园抢玩具，哭了一整天'],
+    ['升学压力大，失眠了好几晚','体育课跑圈，累到腿软','零花钱弄丢了，难过好几天','感冒刚好又淋了雨','作业没写完，被老师点名'],
+    ['工作压力大到失眠','搬家搬得腰酸背痛','宠物走丢，找了一整天','投资亏了一笔钱','体检亮红灯，开始不敢熬夜'],
+    ['一场小病，恢复得比以前慢','职场遭遇瓶颈期','厨房失手，切到了手指','老朋友搬去了远方','应酬太多，体重一路飙升'],
+    ['膝盖开始不太灵便','夜里失眠的次数变多','记性不如从前，老花镜常找不到','一场感冒拖了半个月','最爱的老店关门了']
+  ];
+  var DEATHS=['寿终正寝','一场大病','意外摔倒','积劳成疾','乐极生悲','在一场大雨里着了凉','睡梦中安然离去'];
+  var age=0,alive=true,timer=null,speedMs=1500,paused=false;
+  var logEl=document.getElementById('log');
+
+  function sync(){
+    document.getElementById('left').textContent=LEFT;
+    for(var k in attrs)document.getElementById('v-'+k).textContent=attrs[k];
+  }
+  document.querySelectorAll('#setup .attr button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var k=b.getAttribute('data-k'),d=+b.getAttribute('data-d');
+      var nv=attrs[k]+d;
+      if(d<0&&(nv<0||LEFT>=15))return;
+      if(d>0&&(nv>10||LEFT<=0))return;
+      attrs[k]=nv;LEFT-=d;sync();
+    });
+  });
+  function log(txt,bad){
+    var d=document.createElement('div');
+    if(bad)d.className='bad';
+    d.textContent=txt;
+    logEl.insertBefore(d,logEl.firstChild);
+    while(logEl.children.length>14)logEl.removeChild(logEl.lastChild);
+  }
+  function deathChance(){
+    return Math.min(0.5,0.002+age*age*0.00002*(1-attrs.ti*0.05));
+  }
+  function nextYear(){
+    age++;
+    document.getElementById('age').textContent=age;
+    if(age>99){die('寿终正寝');return;}
+    if(Math.random()<deathChance()){die(DEATHS[Math.floor(Math.random()*DEATHS.length)]);return;}
+    var good=0.5+(attrs.kuai-5)*0.03+(attrs.jia-5)*0.02;
+    good=Math.max(0.35,Math.min(0.85,good));
+    var seg=age<7?0:age<19?1:age<41?2:age<61?3:4;
+    var pool=Math.random()<good?GOOD[seg]:BAD[seg];
+    var txt=pool[Math.floor(Math.random()*pool.length)];
+    log(age+' 岁　'+txt,pool===BAD[seg]);
+  }
+  function die(cause){
+    alive=false;clearInterval(timer);
+    document.getElementById('o-age').textContent=age;
+    document.getElementById('o-cause').textContent='死因：'+cause;
+    document.getElementById('o-attrs').innerHTML='颜值 '+attrs.yan+' · 智力 '+attrs.zh+' · 体质 '+attrs.ti+'<br>家境 '+attrs.jia+' · 快乐 '+attrs.kuai;
+    document.getElementById('overlay').classList.add('show');
+  }
+  function run(){
+    if(!alive||paused)return;
+    nextYear();
+  }
+  document.getElementById('start').addEventListener('click',function(){
+    document.getElementById('setup').hidden=true;
+    document.getElementById('game').hidden=false;
+    age=0;alive=true;paused=false;
+    logEl.innerHTML='';log('0 岁　你出生了，人生重开。');
+    document.getElementById('pause').textContent='暂停';
+    clearInterval(timer);timer=setInterval(run,speedMs);
+  });
+  document.getElementById('pause').addEventListener('click',function(){
+    if(!alive)return;
+    paused=!paused;this.textContent=paused?'继续':'暂停';
+  });
+  document.getElementById('speed').addEventListener('click',function(){
+    if(!alive)return;
+    speedMs=speedMs===1500?400:1500;this.textContent=speedMs===400?'减速':'加速';
+    clearInterval(timer);timer=setInterval(run,speedMs);
+  });
+  document.getElementById('restart').addEventListener('click',function(){
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('game').hidden=true;
+    document.getElementById('setup').hidden=false;
+    clearInterval(timer);
+  });
+  sync();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>赛博徒步：生死鳌太线</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M7 20 14 3l2.5 6L20 10l-7 17-3-7-3-0Z' fill='%23f5b64c'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(245,182,76,.08), transparent 60%);}
+  #app{width:min(94vw,460px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 14px}
+  .brand h1{font-size:21px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .stat .lb{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:4px}
+  .bar{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:6px;transition:width .3s}
+  .bar.water i{background:var(--cyan)}
+  .bar.food i{background:var(--amber)}
+  .bar.hp i{background:#7bd86b}
+  .bar.temp i{background:#ff8a7a}
+  .meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;gap:6px}
+  .meta b{color:var(--text)}
+  .meta .w{color:var(--cyan)}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .act{border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;
+    font-size:13.5px;padding:11px 8px;border-radius:11px;cursor:pointer;transition:border-color .15s}
+  .act:hover{border-color:rgba(245,182,76,.5)}
+  .act:active{transform:scale(.98)}
+  .act small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  #log{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px;height:200px;
+    overflow-y:auto;font-size:13px;line-height:1.9}
+  #log div{animation:fade .3s ease}
+  #log .bad{color:#ff9d9d}
+  #log .good{color:#a8d67c}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;
+    background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}
+  .overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:340px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}
+  .overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+  .btn:active{transform:scale(.98)}
+  .equip-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}
+  .eq{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:12px;text-align:left;
+    cursor:pointer;font-family:inherit;color:var(--text);font-size:13px}
+  .eq.sel{border-color:var(--amber);background:rgba(245,182,76,.1)}
+  .eq b{display:block;font-size:14px;margin-bottom:3px}
+  .eq small{color:var(--muted);font-size:11px;line-height:1.6;display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>赛博徒步：生死鳌太线</h1><p>文字生存 · 每步决策都关乎生死</p></div>
+  </header>
+
+  <div class="panel" id="setup">
+    <p style="color:var(--muted);font-size:13px;line-height:1.8">你正穿越秦岭鳌太线，全程 100 公里。天气恶劣、补给有限，每一天的决策都决定你能走多远。出发前只能带一件装备：</p>
+    <div class="equip-grid">
+      <button class="eq" data-eq="睡袋"><b>羽绒睡袋</b><small>夜间扎营保暖更好，体温恢复 +10</small></button>
+      <button class="eq" data-eq="雨衣"><b>加厚雨衣</b><small>雨雪天气体力消耗减半</small></button>
+      <button class="eq" data-eq="卫星电话"><b>卫星电话</b><small>危机时可求救一次，恢复全部状态</small></button>
+      <button class="eq" data-eq="登山杖"><b>登山杖</b><small>每日体力消耗减少 20%</small></button>
+    </div>
+    <button class="btn" id="start">开始徒步</button>
+  </div>
+
+  <div id="game" hidden>
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><div class="lb"><span>体力</span><b id="n-hp">100</b></div><div class="bar hp"><i id="b-hp" style="width:100%"></i></div></div>
+        <div class="stat"><div class="lb"><span>水分</span><b id="n-water">100</b></div><div class="bar water"><i id="b-water" style="width:100%"></i></div></div>
+        <div class="stat"><div class="lb"><span>食物</span><b id="n-food">100</b></div><div class="bar food"><i id="b-food" style="width:100%"></i></div></div>
+        <div class="stat"><div class="lb"><span>体温</span><b id="n-temp">100</b></div><div class="bar temp"><i id="b-temp" style="width:100%"></i></div></div>
+      </div>
+      <div class="meta">
+        <span>第 <b id="day">1</b> 天</span>
+        <span class="w" id="weather">晴</span>
+        <span>已走 <b id="km">0</b> / 100 km</span>
+        <span>装备：<b id="equip">-</b></span>
+      </div>
+      <div class="actions">
+        <button class="act" data-act="walk">出发前进<small>体力-15 水分-20 食物-15</small></button>
+        <button class="act" data-act="rest">休整一天<small>体力+25 食物-10 水分-5</small></button>
+        <button class="act" data-act="camp">扎营过夜<small>体温+15 食物-5</small></button>
+        <button class="act" data-act="water">找水<small>体力-10 水分+30</small></button>
+        <button class="act" data-act="food">找食物<small>体力-15 食物+25</small></button>
+        <button class="act" data-act="signal" id="sigBtn">卫星求救<small>恢复全部状态（1 次）</small></button>
+      </div>
+    </div>
+    <div class="panel">
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2 id="o-title" style="color:var(--danger)">徒步失败</h2>
+    <div class="sub" id="o-sub"></div>
+    <button class="btn" id="restart">重新出发</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var S={hp:100,water:100,food:100,temp:100,day:1,km:0,equip:'',usedSignal:false};
+  var WEATHERS=['晴','多云','雨','雪','大雾','大风'];
+  var logEl=document.getElementById('log');
+  var OVER=false;
+
+  function log(txt,cls){
+    var d=document.createElement('div');
+    if(cls)d.className=cls;
+    d.textContent=txt;
+    logEl.insertBefore(d,logEl.firstChild);
+    while(logEl.children.length>14)logEl.removeChild(logEl.lastChild);
+  }
+  function setBar(name,val){
+    val=Math.max(0,Math.min(100,Math.round(val)));
+    S[name]=val;
+    document.getElementById('b-'+name).style.width=val+'%';
+    document.getElementById('n-'+name).textContent=val;
+  }
+  function refresh(){
+    document.getElementById('day').textContent=S.day;
+    document.getElementById('km').textContent=Math.min(100,Math.round(S.km));
+    document.getElementById('equip').textContent=S.equip;
+    document.getElementById('sigBtn').style.display=S.equip==='卫星电话'&&!S.usedSignal?'':'none';
+  }
+  function rollWeather(){
+    var r=Math.random();
+    if(r<0.32)return '晴';
+    if(r<0.55)return '多云';
+    if(r<0.72)return '雨';
+    if(r<0.85)return '雪';
+    if(r<0.93)return '大雾';
+    return '大风';
+  }
+  function weatherCost(){
+    var w=document.getElementById('weather').textContent;
+    if(w==='雨'||w==='雪')return S.equip==='雨衣'?0.6:1.4;
+    if(w==='大风')return 1.3;
+    if(w==='大雾')return 1.1;
+    return 1;
+  }
+  function walk(){
+    var w=document.getElementById('weather').textContent;
+    var cost=0.8+(S.equip==='登山杖'?0.8:1); // 基础
+    cost*=weatherCost();
+    var gain=(9+Math.random()*6)*(1-S.hp/100*0.4);
+    if(w==='大雾'&&Math.random()<0.4){
+      log('大雾弥漫，你走了一天却发现回到了原地，白走了。','bad');
+      setBar('hp',S.hp-8*weatherCost());
+      setBar('water',S.water-15);
+      setBar('food',S.food-12);
+      tempDecay();endDay();
+      return;
+    }
+    S.km+=gain;
+    log('你顶着'+w+'前进了约 '+Math.round(gain)+' 公里，累计 '+Math.min(100,Math.round(S.km))+' 公里。');
+    setBar('hp',S.hp-15*cost);
+    setBar('water',S.water-20);
+    setBar('food',S.food-15);
+    if(S.temp>0)setBar('temp',S.temp-6-weatherCost()*4);
+    travelEvent();
+    endDay();
+  }
+  function travelEvent(){
+    var r=Math.random();
+    if(r<0.1){log('半路遇到一队驴友，分了你一些压缩饼干。','good');setBar('food',S.food+15);}
+    else if(r<0.2){log('脚下一滑扭伤了脚踝，疼得冒冷汗。','bad');setBar('hp',S.hp-18);}
+    else if(r<0.3){log('你发现了一处岩缝里的水源，灌满了水壶。','good');setBar('water',S.water+25);}
+    else if(r<0.38){log('高原反应袭来，头昏脑涨，只能放慢速度。','bad');setBar('hp',S.hp-20);}
+    else if(r<0.46){log('傍晚看到壮丽的云海日落，心里涌起一股力量。','good');setBar('temp',S.temp+8);}
+    else if(r<0.54){log('狂风掀翻了你的帽子，追了好久才捡回来。','bad');setBar('hp',S.hp-8);}
+  }
+  function tempDecay(){
+    var w=document.getElementById('weather').textContent;
+    var d=(w==='雨'||w==='雪')?(S.equip==='雨衣'?6:14):(w==='大风'?10:5);
+    setBar('temp',S.temp-d);
+    if(S.temp<30)log('体温持续下降，你开始发抖，这是失温的征兆！','bad');
+  }
+  function endDay(){
+    refresh();
+    if(S.km>=100){
+      OVER=true;
+      document.getElementById('o-title').textContent='成功穿越！';
+      document.getElementById('o-title').style.color='#57c96b';
+      document.getElementById('o-sub').innerHTML='你在第 <b>'+S.day+'</b> 天走完了鳌太线。<br>带着 '+S.equip+'，你活着走完了全程。';
+      showOver();
+      return;
+    }
+    if(S.hp<=0){finish('体力耗尽，你倒在了山脊上。');return;}
+    if(S.water<=0){finish('脱水严重，眼前一片模糊。');return;}
+    if(S.food<=0){finish('断粮两天，再也迈不动步子。');return;}
+    if(S.temp<=0){finish('体温过低，你在寒夜里失去了意识。');return;}
+  }
+  function finish(cause){
+    OVER=true;
+    document.getElementById('o-title').textContent='徒步失败';
+    document.getElementById('o-title').style.color='var(--danger)';
+    document.getElementById('o-sub').innerHTML='第 '+S.day+' 天 · 已走 '+Math.round(S.km)+' 公里<br>'+cause;
+    showOver();
+  }
+  function showOver(){document.getElementById('overlay').classList.add('show');}
+  function dayEndAction(){
+    S.day++;
+    var w=rollWeather();
+    document.getElementById('weather').textContent=w;
+    refresh();
+  }
+  document.querySelectorAll('.act').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(OVER)return;
+      var act=b.getAttribute('data-act');
+      if(act==='walk')walk();
+      else if(act==='rest'){
+        log('你休整了一天，喝热茶、晒睡袋，缓过劲来。','good');
+        setBar('hp',S.hp+25);setBar('food',S.food-10);setBar('water',S.water-5);
+        if(S.temp>0)setBar('temp',S.temp+8);
+        dayEndAction();
+      }
+      else if(act==='camp'){
+        var g=S.equip==='睡袋'?25:15;
+        log('你扎营过夜'+(S.equip==='睡袋'?'，羽绒睡袋很暖和':'')+'。','good');
+        setBar('temp',S.temp+g);setBar('food',S.food-5);
+        dayEndAction();
+      }
+      else if(act==='water'){
+        var got=Math.random()<0.75;
+        if(got){log('你找到了一处水源，喝了个够。','good');setBar('water',S.water+30);}
+        else{log('翻遍了山谷也没找到水，白白消耗了体力。','bad');}
+        setBar('hp',S.hp-10);
+        dayEndAction();
+      }
+      else if(act==='food'){
+        var got=Math.random()<0.65;
+        if(got){log('你采到了可食用的野果和菌子。','good');setBar('food',S.food+25);}
+        else{log('一无所获，只能咽口水。','bad');}
+        setBar('hp',S.hp-15);
+        dayEndAction();
+      }
+      else if(act==='signal'){
+        if(S.equip==='卫星电话'&&!S.usedSignal){
+          S.usedSignal=true;
+          log('你拨通了救援电话，获得补给和医疗支持！','good');
+          setBar('hp',100);setBar('water',100);setBar('food',100);setBar('temp',100);
+          refresh();
+        }
+      }
+      if(S.hp<=0||S.water<=0||S.food<=0||S.temp<=0)endDay();
+    });
+  });
+  var selEq='';
+  document.querySelectorAll('.eq').forEach(function(b){
+    b.addEventListener('click',function(){
+      selEq=b.getAttribute('data-eq');
+      document.querySelectorAll('.eq').forEach(function(e){e.classList.remove('sel');});
+      b.classList.add('sel');
+    });
+  });
+  document.getElementById('start').addEventListener('click',function(){
+    if(!selEq){log('先选一件装备','bad');return;}
+    S={hp:100,water:100,food:100,temp:100,day:1,km:0,equip:selEq,usedSignal:false};
+    OVER=false;
+    document.getElementById('setup').hidden=true;
+    document.getElementById('game').hidden=false;
+    logEl.innerHTML='';
+    document.getElementById('weather').textContent='晴';
+    refresh();
+    for(var k in S)if(k!=='equip'&&k!=='usedSignal'&&k!=='day'&&k!=='km')setBar(k,S[k]);
+    log('第一天，你背上行囊出发了。装备：'+selEq,'good');
+  });
+  document.getElementById('restart').addEventListener('click',function(){
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('game').hidden=true;
+    document.getElementById('setup').hidden=false;
+  });
+})();
+</script>
+</body>
+</html>

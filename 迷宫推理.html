@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>迷宫推理 · 经典逻辑游戏馆</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='2' width='28' height='28' rx='6' fill='%23f0a93e'/><rect x='8' y='8' width='7' height='7' fill='%2310131c'/><rect x='17' y='8' width='7' height='7' fill='%2310131c'/><rect x='8' y='17' width='7' height='7' fill='%2310131c'/><rect x='17' y='17' width='7' height='7' fill='%2310131c'/></svg>">
+<style>
+
+:root{
+  --bg:#10131c; --panel:#191d2a; --panel2:#212638; --line:#2b3150;
+  --ink:#e9ecf6; --sub:#9aa3bf; --dim:#67708f;
+  --gold:#f0a93e; --teal:#41c7ae; --red:#e5534b; --blue:#6b93ff; --ok:#58c96b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,sans-serif;line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(1200px 600px at 70% -10%,rgba(65,199,174,.06),transparent),radial-gradient(900px 500px at 10% 0%,rgba(240,169,62,.05),transparent)}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+/* ===== header & tabs ===== */
+.top{text-align:center;padding:26px 0 6px}
+.top h1{font-size:30px;font-weight:800;letter-spacing:2px}
+.top h1 em{font-style:normal;color:var(--gold)}
+.top .sub{color:var(--sub);margin-top:6px;font-size:14px}
+.tabs{display:flex;justify-content:center;gap:14px;margin:26px 0 30px}
+.tab{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);color:var(--sub);
+  padding:11px 26px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;transition:.18s;font-family:inherit}
+.tab:hover{color:var(--ink);border-color:#3a4268}
+.tab.active{background:var(--panel2);color:var(--ink);box-shadow:0 0 0 1px inset}
+.tab .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tab.active .dot{box-shadow:0 0 10px var(--c)}
+/* ===== game cards ===== */
+.cat-group{display:flex;flex-direction:column;gap:22px}
+.hidden{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  border-left:4px solid var(--c);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.chead{display:flex;align-items:center;gap:10px;padding:16px 20px 0}
+.chead h2{font-size:19px;font-weight:700}
+.ic{width:22px;height:22px;color:var(--c);flex:none}
+.chead .badge{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.rule{color:var(--sub);font-size:13px;padding:6px 20px 0}
+.body{display:grid;grid-template-columns:1fr 230px;gap:16px;padding:16px 20px 14px}
+.ctrl{display:flex;flex-direction:column;gap:9px;justify-content:flex-start}
+.board{min-width:0;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.status{color:var(--sub);font-size:13px;padding:0 20px 16px;min-height:20px}
+.status b{color:var(--ink);font-weight:600}
+.status .win{color:var(--ok)} .status .lose{color:var(--red)} .status .warn{color:var(--gold)}
+/* ===== buttons & inputs ===== */
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:9px 14px;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:hover{border-color:#414b7a;background:#262c44}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--c);border-color:var(--c);color:#14161f;font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);background:var(--c)}
+.btn.ghost{background:transparent;color:var(--sub)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+input[type=text],input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 12px;font-size:14px;outline:none;font-family:inherit}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--c)}
+input[type=number]{width:88px}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.meter{display:flex;gap:14px;color:var(--sub);font-size:13px}
+.meter b{color:var(--ink)}
+/* ===== common board bits ===== */
+.cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:6px;font-size:15px;font-weight:600;user-select:none}
+.card4{display:flex;gap:10px;flex-wrap:wrap}
+.card4 .pk{width:76px;height:104px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:800;background:linear-gradient(160deg,#f6f8fd,#dfe4f0);color:#232a45;
+  box-shadow:0 6px 14px rgba(0,0,0,.35);border:1px solid #c9d0e2}
+.expr{width:min(420px,100%);font-size:17px;letter-spacing:1px}
+.pad{display:flex;flex-wrap:wrap;gap:7px;max-width:420px}
+.pad button{min-width:44px;padding:7px 0;font-size:16px}
+/* Nim */
+.piles{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+.pile{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pile .stones{display:flex;flex-wrap:wrap;gap:5px;width:92px;justify-content:center;min-height:96px;padding:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.stone{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f7c46b,#c97f18);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.pile .pn{font-size:13px;color:var(--sub);font-weight:600}
+.pile.sel .stones{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,169,62,.35)}
+.pile.sel .pn{color:var(--gold)}
+/* slide puzzle */
+.slideboard{display:grid;gap:6px;background:var(--panel2);border:1px solid var(--line);padding:8px;border-radius:12px}
+.tile{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2b3354,#232a45);
+  border-radius:8px;font-size:22px;font-weight:800;color:#cdd6f5;cursor:pointer;user-select:none;box-shadow:0 3px 8px rgba(0,0,0,.3);transition:background .12s}
+.tile:hover{background:#313a61}
+.tile.blank{background:transparent;box-shadow:none;cursor:default}
+/* jugs */
+.jugs{display:flex;gap:34px;align-items:flex-end;flex-wrap:wrap}
+.jug{display:flex;flex-direction:column;align-items:center;gap:8px}
+.jar{width:74px;height:150px;border:3px solid var(--line);border-top:none;border-radius:0 0 10px 10px;position:relative;background:rgba(20,26,44,.5);overflow:hidden}
+.jar .water{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(65,199,174,.75),rgba(65,199,174,.5));transition:height .3s}
+.jar .cap{position:absolute;top:0;left:-8px;right:-8px;height:6px;background:var(--line);border-radius:3px}
+.jug .capv{font-size:12px;color:var(--sub)} .jug .name{font-size:13px;font-weight:700}
+.goalbar{margin-top:4px;font-size:13px;color:var(--sub)}
+.goalbar b{color:var(--teal)}
+/* bridges */
+.brsvg{width:100%;max-width:640px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* slitherlink */
+.lpsvg{width:100%;max-width:560px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* minesweeper */
+.minegrid{display:grid;gap:3px;background:var(--panel2);border:1px solid var(--line);padding:7px;border-radius:10px;user-select:none}
+.mcell{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:#2a3150;
+  border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+.mcell.rev{background:#1d2339;cursor:default}
+.mcell.mine-hit{background:var(--red)}
+.mcell.flag{background:#26304d}
+.mcell.f1{color:#7fd0ff}.mcell.f2{color:#58c96b}.mcell.f3{color:#f0a93e}.mcell.f4{color:#6b93ff}.mcell.f5{color:#e07a5f}.mcell.f6{color:#41c7ae}.mcell.f7{color:#f0a93e}.mcell.f8{color:#e5534b}
+/* maze */
+.mzcanvas{width:100%;max-width:600px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;display:block;touch-action:none}
+.toggle{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--c)}
+/* toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#262c44;border:1px solid #414b7a;
+  color:var(--ink);padding:10px 20px;border-radius:10px;font-size:14px;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;top:28px}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:44px}
+@media (max-width:760px){
+  .body{grid-template-columns:1fr}
+  .ctrl{flex-direction:row;flex-wrap:wrap}
+  .top h1{font-size:24px}
+  .tabs{gap:8px}
+  .tab{padding:9px 16px;font-size:13px}
+  .cell{width:30px;height:30px;font-size:14px}
+  .mcell{width:26px;height:26px}
+}
+
+.back{color:var(--teal);text-decoration:none;font-weight:600}
+.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>迷宫推理</h1>
+  <p class="sub">经典逻辑游戏馆 · <a class="back" href="经典逻辑游戏合集.html">返回游戏馆</a></p>
+</header>
+<main>
+<article class="card" style="--c:var(--teal)">
+    <div class="chead">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 7h4M7 7v6M7 13h6M13 13v6M13 19h8M17 7h4" stroke-linecap="round"/><circle cx="5.4" cy="5.4" r="1.4" fill="currentColor" stroke="none"/><circle cx="18.6" cy="18.6" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <h2>迷宫推理</h2><span class="badge">探索</span>
+    </div>
+    <p class="rule">从绿点走到终点。开启迷雾后只能看到周围一格，靠推理找路。</p>
+    <div class="body">
+      <div class="board">
+        <canvas id="mzCanvas" class="mzcanvas" width="540" height="540"></canvas>
+      </div>
+      <div class="ctrl">
+        <label style="color:var(--sub);font-size:13px">规模</label>
+        <div class="btnrow">
+          <button class="btn sm" id="mzSmall">9×9</button>
+          <button class="btn sm primary" id="mzMid">15×15</button>
+          <button class="btn sm" id="mzBig">21×21</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="mzFog">迷雾模式</label>
+        <button class="btn" id="mzNew">新迷宫</button>
+        <div class="meter"><span>步数 <b id="mzMoves">0</b></span></div>
+      </div>
+    </div>
+    <div class="status" id="mzStatus">方向键 / WASD 移动，或点击棋盘寻路。</div>
+  </article>
+</main>
+<footer>经典逻辑游戏馆 · 本地运行无需联网</footer>
+</div>
+<script>
+"use strict";
+/* ================= 共享工具 ================= */
+const $=id=>document.getElementById(id);
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e;};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function toast(msg){let t=$('toastBox');if(!t){t=el('div');t.id='toastBox';t.className='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+/* 有理数运算（避免浮点误差，用于 24 点） */
+function F(n,d){this.n=n;this.d=d||1;this.simp();}
+F.prototype.simp=function(){const g=gcd(Math.abs(this.n),Math.abs(this.d));this.n/=g;this.d/=g;if(this.d<0){this.n=-this.n;this.d=-this.d;}return this;};
+F.prototype.add=function(o){return new F(this.n*o.d+o.n*this.d,this.d*o.d);};
+F.prototype.sub=function(o){return new F(this.n*o.d-o.n*this.d,this.d*o.d);};
+F.prototype.mul=function(o){return new F(this.n*o.n,this.d*o.d);};
+F.prototype.div=function(o){return o.n===0?null:new F(this.n*o.d,this.d*o.n);};
+F.prototype.eq=function(o){return this.n===o.n&&this.d===o.d;};
+/* 表达式求值（中缀 → RPN → 有理数） */
+function tokExpr(s){
+  const t=[];let i=0;s=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/＋/g,'+').replace(/[（）]/g,c=>c==='（'?'(':')');
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(/[0-9]/.test(c)){let j=i;while(j<s.length&&/[0-9]/.test(s[j]))j++;t.push({k:'n',v:parseInt(s.slice(i,j),10)});i=j;continue;}
+    if('+-*/()'.includes(c)){t.push({k:c});i++;continue;}
+    return null;
+  }
+  return t;
+}
+function evalExpr(s){
+  const t=tokExpr(s);if(!t||t.length===0)return null;
+  const out=[],op=[];const prec={'+':1,'-':1,'*':2,'/':2};
+  for(const x of t){
+    if(x.k==='n')out.push(x.v);
+    else if(x.k==='(')op.push(x.k);
+    else if(x.k===')'){
+      while(op.length&&op[op.length-1]!=='('){out.push(op.pop());}
+      if(!op.length)return null;op.pop();
+    }else{
+      while(op.length&&op[op.length-1]!=='('&&prec[op[op.length-1]]>=prec[x.k])out.push(op.pop());
+      op.push(x.k);
+    }
+  }
+  while(op.length){if(op[op.length-1]==='(')return null;out.push(op.pop());}
+  const st=[];
+  for(const x of out){
+    if(typeof x==='number')st.push(new F(x,1));
+    else{
+      const b=st.pop(),a=st.pop();if(a===undefined||b===undefined)return null;
+      let r=x==='+'?a.add(b):x==='-'?a.sub(b):x==='*'?a.mul(b):a.div(b);
+      if(!r)return null;st.push(r);
+    }
+  }
+  return st.length===1?st[0]:null;
+}
+
+
+const MZ={n:15,cell:36,px:0,py:0,walls:[],vis:[],moves:0,fog:false,ani:null};
+function mzNew(n){
+  n=n||MZ.n;MZ.n=n;
+  const cvs=$('mzCanvas');cvs.width=540;cvs.height=540;
+  MZ.cell=Math.floor(540/n);
+  MZ.walls=Array.from({length:n},()=>Array.from({length:n},()=>({r:true,d:true})));
+  const seen=Array.from({length:n},()=>Array(n).fill(false));
+  const stack=[[0,0]];seen[0][0]=true;
+  while(stack.length){
+    const [r,c]=stack[stack.length-1];
+    const nb=[];
+    if(r>0&&!seen[r-1][c])nb.push([r-1,c,'u']);
+    if(r<n-1&&!seen[r+1][c])nb.push([r+1,c,'d']);
+    if(c>0&&!seen[r][c-1])nb.push([r,c-1,'l']);
+    if(c<n-1&&!seen[r][c+1])nb.push([r,c+1,'r']);
+    if(!nb.length){stack.pop();continue;}
+    const [nr,nc,dir]=nb[rnd(0,nb.length-1)];
+    seen[nr][nc]=true;
+    if(dir==='u')MZ.walls[nr][nc].d=false;
+    if(dir==='d')MZ.walls[r][c].d=false;
+    if(dir==='l')MZ.walls[nr][nc].r=false;
+    if(dir==='r')MZ.walls[r][c].r=false;
+    stack.push([nr,nc]);
+  }
+  MZ.px=0;MZ.py=0;MZ.moves=0;
+  MZ.vis=Array.from({length:n},()=>Array(n).fill(false));
+  MZ.vis[0][0]=true;
+  if(MZ.ani)clearInterval(MZ.ani);
+  mzRender();
+  mzStatus('从绿点出发，找到金色终点。');
+}
+function mzStatus(msg,cls){$('mzStatus').innerHTML='<b class="'+(cls||'')+'">'+msg+'</b>';}
+function mzRender(){
+  const cvs=$('mzCanvas'),ctx=cvs.getContext('2d');
+  const n=MZ.n,cell=MZ.cell;
+  ctx.clearRect(0,0,540,540);
+  ctx.fillStyle='#171b28';ctx.fillRect(0,0,n*cell,n*cell);
+  const visR=MZ.vis;
+  const shown=(r,c)=>{
+    if(!MZ.fog)return true;
+    if(visR[r]&&visR[r][c])return true;
+    for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<n&&nc>=0&&nc<n&&visR[nr]&&visR[nr][nc])return true;
+    }
+    return false;
+  };
+  ctx.fillStyle='#202438';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(shown(r,c))ctx.fillRect(c*cell,r*cell,cell,cell);
+  ctx.fillStyle='rgba(240,169,62,.22)';
+  ctx.fillRect((n-1)*cell,(n-1)*cell,cell,cell);
+  // 墙
+  ctx.strokeStyle=MZ.fog?'#39416b':'#5d6685';ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+    if(!shown(r,c))continue;
+    if(MZ.walls[r][c].r){ctx.moveTo((c+1)*cell,r*cell);ctx.lineTo((c+1)*cell,(r+1)*cell);}
+    if(MZ.walls[r][c].d){ctx.moveTo(c*cell,(r+1)*cell);ctx.lineTo((c+1)*cell,(r+1)*cell);}
+  }
+  ctx.strokeRect(0,0,n*cell,n*cell);
+  ctx.stroke();
+  // 终点
+  ctx.fillStyle='#f0a93e';
+  ctx.fillRect((n-1)*cell+cell*.3,(n-1)*cell+cell*.3,cell*.4,cell*.4);
+  // 玩家
+  ctx.fillStyle='#41c7ae';
+  ctx.beginPath();
+  ctx.arc(MZ.px*cell+cell/2,MZ.py*cell+cell/2,cell*.3,0,Math.PI*2);
+  ctx.fill();
+  $('mzMoves').textContent=MZ.moves;
+}
+function mzMove(dr,dc){
+  if(MZ.ani)return;
+  const r=MZ.py+dr,c=MZ.px+dc;
+  if(r<0||r>=MZ.n||c<0||c>=MZ.n)return;
+  const blocked=dr===-1?MZ.walls[r][c].d:dr===1?MZ.walls[MZ.py][MZ.px].d:dc===-1?MZ.walls[r][c].r:MZ.walls[MZ.py][MZ.px].r;
+  if(blocked)return;
+  MZ.px=c;MZ.py=r;MZ.moves++;
+  MZ.vis[r][c]=true;
+  mzRender();
+  if(r===MZ.n-1&&c===MZ.n-1){
+    mzStatus('到达终点！共用 '+MZ.moves+' 步。按「新迷宫」再来。','win');
+    toast('迷宫通关！');
+  }
+}
+function mzPathTo(tr,tc){
+  const n=MZ.n;
+  const q=[[MZ.px,MZ.py]],prev=new Map();
+  const vis2=Array.from({length:n},()=>Array(n).fill(false));
+  vis2[MZ.py][MZ.px]=true;prev.set(MZ.py+','+MZ.px,null);
+  while(q.length){
+    const [cx,cy]=q.shift();
+    if(cx===tc&&cy===tr)return MZ._path=prev;
+    const opts=[];
+    if(cx+1<n&&!MZ.walls[cy][cx].r)opts.push([cx+1,cy]);
+    if(cx-1>=0&&!MZ.walls[cy][cx-1].r)opts.push([cx-1,cy]);
+    if(cy+1<n&&!MZ.walls[cy][cx].d)opts.push([cx,cy+1]);
+    if(cy-1>=0&&!MZ.walls[cy-1][cx].d)opts.push([cx,cy-1]);
+    for(const [nx,ny] of opts){
+      if(!vis2[ny][nx]){vis2[ny][nx]=true;prev.set(ny+','+nx,[cy,cx]);q.push([nx,ny]);}
+    }
+  }
+  return null;
+}
+(function(){
+  const cvs=$('mzCanvas');
+  cvs.addEventListener('click',e=>{
+    if(MZ.ani)return;
+    const rect=cvs.getBoundingClientRect();
+    const px=(e.clientX-rect.left)*cvs.width/rect.width;
+    const py=(e.clientY-rect.top)*cvs.height/rect.height;
+    const tc=Math.min(MZ.n-1,Math.floor(px/MZ.cell));
+    const tr=Math.min(MZ.n-1,Math.floor(py/MZ.cell));
+    if(tc===MZ.px&&tr===MZ.py)return;
+    const prev=mzPathTo(tr,tc);
+    if(!prev){toast('这里到不了，路径被墙挡住');return;}
+    const path=[];
+    let cur=tr+','+tc;
+    while(prev.get(cur)!==null){
+      const [py2,px2]=prev.get(cur);
+      path.unshift([px2,py2]);
+      cur=py2+','+px2;
+    }
+    let i=0;
+    MZ.ani=setInterval(()=>{
+      if(i>=path.length){clearInterval(MZ.ani);MZ.ani=null;return;}
+      const [nx,ny]=path[i];
+      MZ.px=nx;MZ.py=ny;MZ.moves++;
+      MZ.vis[ny][nx]=true;
+      mzRender();
+      if(ny===MZ.n-1&&nx===MZ.n-1){
+        clearInterval(MZ.ani);MZ.ani=null;
+        mzStatus('到达终点！共用 '+MZ.moves+' 步。','win');
+        toast('迷宫通关！');
+      }
+      i++;
+    },70);
+  });
+})();
+document.addEventListener('keydown',e=>{
+  const map={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],w:[-1,0],s:[1,0],a:[0,-1],d:[0,1],W:[-1,0],S:[1,0],A:[0,-1],D:[0,1]};
+  const mv=map[e.key];
+  if(mv){e.preventDefault();mzMove(mv[0],mv[1]);}
+});
+$('mzFog').addEventListener('change',e=>{MZ.fog=e.target.checked;mzRender();mzStatus(MZ.fog?'迷雾开启：只能看到走过的路与周围一格，靠推理前进。':'迷雾关闭：可以看到整张迷宫。');});
+$('mzNew').onclick=()=>mzNew();
+$('mzSmall').onclick=()=>mzNew(9);
+$('mzMid').onclick=()=>mzNew(15);
+$('mzBig').onclick=()=>mzNew(21);
+mzNew(15);
+
+
+</script>
+</body>
+</html>

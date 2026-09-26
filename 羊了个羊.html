@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>羊了个羊</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M12 3c2.5 4 2.5 8 0 12-2.5-4-2.5-8 0-12Z' fill='%2358d3e8'/%3E%3Cpath d='M6 9c3-1 5-1 6 0M18 9c-3-1-5-1-6 0' stroke='%23f5b64c' stroke-width='1.4' fill='none'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(245,182,76,.08), transparent 60%);}
+  #app{width:min(94vw,420px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .scores{display:flex;gap:8px}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted);letter-spacing:.06em}
+  .score-box b{font-size:17px;font-weight:800;color:var(--amber);line-height:1.25;display:block}
+  .score-box.hi b{color:var(--cyan)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  #deck{position:relative;height:230px}
+  .layer{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:5px;padding:4px}
+  .tile{position:relative;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(255,255,255,.15);box-shadow:0 3px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .12s}
+  .tile:active{transform:scale(.94)}
+  .tile.hidden{visibility:hidden;pointer-events:none;box-shadow:none}
+  .tile svg{width:58%;height:58%}
+  #slots{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;background:var(--surface2);
+    border-radius:12px;padding:8px;min-height:54px}
+  .slot{height:46px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center}
+  .slot svg{width:60%;height:60%}
+  .tools{display:flex;gap:10px;margin-top:10px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);
+    font-family:inherit;font-size:13px;padding:9px;border-radius:10px;cursor:pointer}
+  .tools button:disabled{opacity:.4;cursor:default}
+  .tools button:not(:disabled):hover{border-color:rgba(245,182,76,.5)}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:6px}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;
+    background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}
+  .overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:320px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}
+  .overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+  .btn:active{transform:scale(.98)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>羊了个羊</h1><p>消除牌堆 · 三张相同即消</p></div>
+    <div class="scores">
+      <div class="score-box"><span class="k">消除</span><b id="count">0</b></div>
+      <div class="score-box hi"><span class="k">最高</span><b id="high">0</b></div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <div id="deck"></div>
+  </div>
+  <div class="panel">
+    <div id="slots"></div>
+    <div class="tools">
+      <button id="undo">撤回（1 次）</button>
+      <button id="shuffle">洗牌（1 次）</button>
+    </div>
+    <p class="tip">点击牌堆中的牌放入槽位，3 张相同自动消除，槽满 7 格即失败</p>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2 id="o-title" style="color:var(--danger)">槽满了！</h2>
+    <div class="sub" id="o-sub">这次差一点点</div>
+    <button class="btn" id="restart">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var COLS=4,ROWS=4,LAYERS=3,TYPES=6,PER=8,TOTAL=COLS*ROWS*LAYERS;
+  var COLORS=['#ff5d5d','#58d3e8','#7bd86b','#b06bff','#f5b64c','#ff8a7a'];
+  var SYMS=['M','D','H','O','S','X']; // 形状符号
+  var deckEl=document.getElementById('deck');
+  var slotEl=document.getElementById('slots');
+  var KEY='ylylhi',high=+(localStorage.getItem(KEY)||0);
+  document.getElementById('high').textContent=high;
+  var tiles=[],slots=[],cleared=0,usedUndo=false,usedShuffle=false;
+
+  function renderSlot(){
+    slotEl.innerHTML='';
+    for(var i=0;i<7;i++){
+      var s=document.createElement('div');s.className='slot';
+      if(slots[i])s.innerHTML=svg(slots[i]);
+      slotEl.appendChild(s);
+    }
+  }
+  function svg(t){
+    return '<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="'+COLORS[t]+'"/><text x="12" y="17" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d0f22" font-family="sans-serif">'+SYMS[t]+'</text></svg>';
+  }
+  function buildDeck(){
+    tiles=[];
+    var all=[],i;
+    for(i=0;i<TYPES;i++)for(var j=0;j<PER;j++)all.push(i);
+    // 洗牌
+    for(i=all.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1));var tmp=all[i];all[i]=all[k];all[k]=tmp;}
+    var idx=0;
+    for(var l=0;l<LAYERS;l++)for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)
+      tiles.push({l:l,r:r,c:c,t:all[idx++],el:null});
+    renderDeck();
+  }
+  function renderDeck(){
+    deckEl.innerHTML='';
+    for(var l=0;l<LAYERS;l++){
+      var lay=document.createElement('div');lay.className='layer';
+      lay.style.zIndex=l;lay.style.marginTop=(l*8)+'px';
+      deckEl.appendChild(lay);
+    }
+    var layers=deckEl.children;
+    tiles.forEach(function(t){
+      var div=document.createElement('div');
+      div.className='tile';div.innerHTML=svg(t.t);
+      div.addEventListener('click',function(){pickTile(t);});
+      t.el=div;
+      layers[t.l].appendChild(div);
+    });
+  }
+  function pickable(t){
+    for(var i=0;i<tiles.length;i++){
+      var o=tiles[i];
+      if(o.l>t.l&&o.r===t.r&&o.c===t.c)return false;
+    }
+    return true;
+  }
+  function pickTile(t){
+    if(!pickable(t)){shake(t.el);return;}
+    tiles.splice(tiles.indexOf(t),1);
+    t.el.remove();
+    slots.push(t.t);
+    renderSlot();
+    checkTriple();
+    if(slots.length>=7){fail();return;}
+    if(tiles.length===0){win();return;}
+  }
+  function checkTriple(){
+    var found=true;
+    while(found){
+      found=false;
+      for(var i=0;i<TYPES;i++){
+        var pos=[];
+        for(var j=0;j<slots.length;j++)if(slots[j]===i)pos.push(j);
+        if(pos.length>=3){
+          for(var k=pos.length-1;k>=pos.length-3;k--)slots.splice(pos[k],1);
+          cleared++;
+          document.getElementById('count').textContent=cleared;
+          var h=cleared*10;
+          if(h>high){high=h;document.getElementById('high').textContent=high;localStorage.setItem(KEY,high);}
+          renderSlot();found=true;break;
+        }
+      }
+    }
+  }
+  function shake(el){
+    el.style.transform='translateX(-4px)';
+    setTimeout(function(){el.style.transform='';},80);
+  }
+  function fail(){
+    document.getElementById('o-title').textContent='槽满了！';
+    document.getElementById('o-title').style.color='var(--danger)';
+    document.getElementById('o-sub').textContent='消除 '+cleared+' 组 · 剩余牌 '+tiles.length+' 张';
+    document.getElementById('overlay').classList.add('show');
+  }
+  function win(){
+    document.getElementById('o-title').textContent='通关！';
+    document.getElementById('o-title').style.color='#57c96b';
+    document.getElementById('o-sub').textContent='你清空了整个牌堆！';
+    document.getElementById('overlay').classList.add('show');
+  }
+  function undo(){
+    if(usedUndo||slots.length===0)return;
+    usedUndo=true;document.getElementById('undo').disabled=true;
+    var t=slots.pop();
+    // 放回牌堆：找空格
+    var free=null;
+    for(var i=0;i<tiles.length;i++){
+      var o=tiles[i];
+      if(o.el&&o.el.classList.contains('hidden'))continue;
+    }
+    // 简单：随机找一个空 (r,c) 空隙放入最上层
+    outer:
+    for(var l=LAYERS-1;l>=0;l--){
+      for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+        var occupied=tiles.some(function(o){return o.l===l&&o.r===r&&o.c===c;});
+        if(!occupied){
+          var nt={l:l,r:r,c:c,t:t,el:null};
+          tiles.push(nt);
+          var div=document.createElement('div');div.className='tile';div.innerHTML=svg(t);
+          div.addEventListener('click',function(){pickTile(nt);});
+          nt.el=div;
+          deckEl.children[l].appendChild(div);
+          break outer;
+        }
+      }
+    }
+    renderSlot();
+  }
+  function shuffle(){
+    if(usedShuffle||tiles.length===0)return;
+    usedShuffle=true;document.getElementById('shuffle').disabled=true;
+    var ts=tiles.map(function(t){return t.t;});
+    for(var i=ts.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1));var tmp=ts[i];ts[i]=ts[k];ts[k]=tmp;}
+    // 重新铺到现有空位（保持格数不变：按现有 tiles 的格位置重排）
+    // 简化：先清除所有元素，再按位置顺序填充
+    var pos=tiles.map(function(t){return {l:t.l,r:t.r,c:t.c};});
+    var layers=deckEl.children;
+    tiles.forEach(function(t){t.el.remove();});
+    tiles=[];
+    for(i=0;i<pos.length;i++){
+      var p=pos[i],nt={l:p.l,r:p.r,c:p.c,t:ts[i],el:null};
+      var div=document.createElement('div');div.className='tile';div.innerHTML=svg(ts[i]);
+      div.addEventListener('click',function(){pickTile(nt);});
+      nt.el=div;layers[p.l].appendChild(div);
+      tiles.push(nt);
+    }
+  }
+  function init(){
+    usedUndo=false;usedShuffle=false;slots=[];cleared=0;
+    document.getElementById('undo').disabled=false;
+    document.getElementById('shuffle').disabled=false;
+    document.getElementById('count').textContent=0;
+    document.getElementById('high').textContent=+(localStorage.getItem(KEY)||0);
+    document.getElementById('overlay').classList.remove('show');
+    buildDeck();renderSlot();
+  }
+  document.getElementById('undo').addEventListener('click',undo);
+  document.getElementById('shuffle').addEventListener('click',shuffle);
+  document.getElementById('restart').addEventListener('click',init);
+  init();
+})();
+</script>
+</body>
+</html>

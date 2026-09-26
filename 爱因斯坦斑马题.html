@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>爱因斯坦斑马题</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M12 6c1.5 1.5 1.5 4 0 5.5-1.5-1.5-1.5-4 0-5.5ZM8.5 10c1.5.5 3 .5 4 1.5M15.5 10c-1.5.5-3 .5-4 1.5' stroke='%23f5b64c' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(245,182,76,.10), transparent 60%)}
+  #app{width:min(96vw,560px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber);cursor:pointer}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .clue{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12.5px;line-height:2;color:var(--text)}
+  .clue b{color:var(--amber)}
+  .tbl{width:100%;border-collapse:separate;border-spacing:2px;margin:6px 0 2px}
+  .tbl th{font-size:11.5px;color:var(--cyan);padding:2px;text-align:center;font-weight:700}
+  .tbl td{border:1px solid var(--line);height:30px;text-align:center;font-size:12px;cursor:pointer;border-radius:5px;color:var(--muted)}
+  .tbl td.y{background:rgba(87,201,107,.4);color:#d6ffd6}
+  .tbl td.n{background:rgba(255,93,93,.18);color:#ff9d9d}
+  .tools{display:flex;gap:8px;margin-top:10px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:8px;line-height:1.8}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:360px;width:100%}
+  .overlay h2{font-size:24px;font-weight:800}.overlay .sub{font-size:13px;color:var(--muted);margin:10px 0 16px;line-height:2}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>爱因斯坦斑马题</h1><p>经典推理 · 谁养鱼？</p></div>
+    <div class="score-box"><span class="k">重来</span><b id="newbtn">清空</b></div>
+  </header>
+  <div class="panel">
+    <div class="clue" id="clues"></div>
+  </div>
+  <div class="panel">
+    <div id="tables"></div>
+    <div class="tools">
+      <button id="check">检查答案</button>
+      <button id="ans">看答案</button>
+    </div>
+    <p class="tip">5 栋房子从左到右 1-5 号。点击单元格：空白 → ✓ → ✗。推理出每栋房子的颜色、国籍、饮料、雪茄和宠物</p>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 id="ot" style="color:#57c96b">推理正确！</h2><div class="sub" id="os"></div><button class="btn" id="restart">再推一遍</button></div></div>
+<script>
+(function(){
+  var CATS=[{n:'颜色',it:['红','绿','白','黄','蓝']},{n:'国籍',it:['英国','瑞典','丹麦','挪威','德国']},
+    {n:'饮料',it:['茶','咖啡','牛奶','啤酒','水']},{n:'雪茄',it:['Pall Mall','Dunhill','Blend','Blue Master','Prince']},
+    {n:'宠物',it:['狗','鸟','猫','马','鱼']}];
+  var ANS={1:{颜色:'黄',国籍:'挪威',饮料:'水',雪茄:'Dunhill',宠物:'猫'},2:{颜色:'蓝',国籍:'丹麦',饮料:'茶',雪茄:'Blend',宠物:'马'},
+    3:{颜色:'红',国籍:'英国',饮料:'牛奶',雪茄:'Pall Mall',宠物:'鸟'},4:{颜色:'绿',国籍:'德国',饮料:'咖啡',雪茄:'Prince',宠物:'鱼'},
+    5:{颜色:'白',国籍:'瑞典',饮料:'啤酒',雪茄:'Blue Master',宠物:'狗'}};
+  var grid={};
+  CATS.forEach(function(cat){cat.it.forEach(function(it){for(var h=1;h<=5;h++)grid[h+cat.n+it]=0;});});
+  var CLUES=['1. 英国人住红色房子','2. 瑞典人养狗','3. 丹麦人喝茶','4. 绿色房子在白色房子左边','5. 绿色房子主人喝咖啡','6. 抽 Pall Mall 的人养鸟','7. 黄色房子主人抽 Dunhill','8. 住中间房子的人喝牛奶','9. 挪威人住在第一间','10. 抽 Blend 的人住在养猫的人隔壁','11. 养马的人住在抽 Dunhill 的人隔壁','12. 抽 Blue Master 的人喝啤酒','13. 德国人抽 Prince','14. 挪威人住在蓝色房子隔壁','15. 抽 Blend 的人有一个喝水的邻居'];
+  function render(){
+    document.getElementById('clues').innerHTML=CLUES.map(function(c){return c;}).join('<br>');
+    var el=document.getElementById('tables');el.innerHTML='';
+    CATS.forEach(function(cat){
+      var tb='<table class="tbl"><tr><th></th>'+cat.it.map(function(i){return '<th>'+i+'</th>';}).join('')+'</tr>';
+      for(var h=1;h<=5;h++){
+        tb+='<tr><th>'+h+'号</th>';
+        cat.it.forEach(function(it){
+          var v=grid[h+cat.n+it];
+          var cls=v===1?'y':v===2?'n':'';
+          tb+='<td class="'+cls+'" data-h="'+h+'" data-c="'+cat.n+'" data-i="'+it+'">'+(v===1?'✓':v===2?'✗':'')+'</td>';
+        });
+        tb+='</tr>';
+      }
+      tb+='</table>';
+      var wrap=document.createElement('div');wrap.innerHTML=tb;
+      el.appendChild(wrap);
+    });
+    el.querySelectorAll('td').forEach(function(td){
+      td.addEventListener('click',function(){
+        var h=td.getAttribute('data-h'),c=td.getAttribute('data-c'),i=td.getAttribute('data-i');
+        grid[h+c+i]=(grid[h+c+i]+1)%3;render();
+      });
+    });
+  }
+  function check(){
+    var ok=true;
+    for(var h=1;h<=5;h++)CATS.forEach(function(cat){cat.it.forEach(function(it){
+      var want=ANS[h][cat.n]===it?1:0;
+      if(grid[h+cat.n+it]===1&&want!==1)ok=false;
+      if(grid[h+cat.n+it]===2&&want!==2)ok=false;
+    });});
+    if(ok){
+      document.getElementById('os').innerHTML='养鱼的是 <b>'+ANS[4].国籍+'</b> 人（4 号绿房子）！';
+      document.getElementById('overlay').classList.add('show');
+    }else alert('还有标注不对，再推推看');
+  }
+  function showAns(){
+    document.getElementById('ot').textContent='答案';
+    document.getElementById('ot').style.color='var(--amber)';
+    var rows=[];
+    for(var h=1;h<=5;h++)rows.push(h+'号：'+CATS.map(function(c){return ANS[h][c.n];}).join(' / '));
+    document.getElementById('os').innerHTML=rows.join('<br>')+'<br><b>养鱼的是 '+ANS[4].国籍+' 人</b>';
+    document.getElementById('overlay').classList.add('show');
+  }
+  function clearGrid(){
+    for(var h=1;h<=5;h++)CATS.forEach(function(cat){cat.it.forEach(function(it){grid[h+cat.n+it]=0;});});
+    document.getElementById('ot').textContent='推理正确！';document.getElementById('ot').style.color='#57c96b';
+    document.getElementById('overlay').classList.remove('show');
+    render();
+  }
+  document.getElementById('check').addEventListener('click',check);
+  document.getElementById('ans').addEventListener('click',showAns);
+  document.getElementById('newbtn').addEventListener('click',clearGrid);
+  document.getElementById('restart').addEventListener('click',clearGrid);
+  render();
+})();
+</script>
+</body>
+</html>

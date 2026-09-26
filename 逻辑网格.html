@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>逻辑网格题</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cg fill='%2358d3e8'%3E%3Crect x='5' y='5' width='4' height='4' rx='1'/%3E%3Crect x='13' y='13' width='4' height='4' rx='1'/%3E%3C/g%3E%3Cg fill='%23f5b64c'%3E%3Crect x='13' y='5' width='4' height='4' rx='1'/%3E%3Crect x='5' y='13' width='4' height='4' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%)}
+  #app{width:min(94vw,500px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber);cursor:pointer}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .clue{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);line-height:1.9;margin-bottom:12px}
+  .tbl{width:100%;border-collapse:separate;border-spacing:0;margin-bottom:6px}
+  .tbl th{font-size:12px;color:var(--amber);padding:4px;text-align:left}
+  .tbl td{border:1px solid var(--line);width:44px;height:34px;text-align:center;font-size:14px;cursor:pointer;border-radius:5px;color:var(--muted)}
+  .tbl td.y{background:rgba(87,201,107,.4);color:#d6ffd6}
+  .tbl td.n{background:rgba(255,93,93,.18);color:#ff9d9d}
+  .tools{display:flex;gap:8px;margin-top:8px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:8px;line-height:1.8}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:340px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}.overlay .sub{font-size:13px;color:var(--muted);margin:10px 0 16px;line-height:1.9}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>逻辑网格题</h1><p>四口之家 · 颜色宠物饮料</p></div>
+    <div class="score-box"><span class="k">新题</span><b id="newbtn">换题</b></div>
+  </header>
+  <div class="panel">
+    <div class="clue" id="clues"></div>
+    <div id="tables"></div>
+    <div class="tools"><button id="check">检查答案</button><button id="new">换一道</button></div>
+    <p class="tip">点击单元格循环：空白 → ✓（是）→ ✗（不是）。推理出每个人的颜色、宠物和饮料</p>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 style="color:#57c96b">推理正确！</h2><div class="sub" id="ans"></div><button class="btn" id="restart">再来一道</button></div></div>
+<script>
+(function(){
+  var PEOPLE=['甲','乙','丙','丁'];
+  var CATS=[{n:'颜色',it:['红','蓝','绿','黄']},{n:'宠物',it:['猫','狗','鸟','鱼']},{n:'饮料',it:['茶','咖啡','牛奶','果汁']}];
+  var sol={},grid={},clues=[];
+  function sh(a){for(var i=a.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[k];a[k]=t;}return a;}
+  function gen(){
+    sol={};clues=[];
+    CATS.forEach(function(cat){
+      var perm=sh(cat.it.slice());
+      PEOPLE.forEach(function(p,i){sol[p+cat.n]=perm[i];});
+    });
+    // 生成线索：类型1 人-属性配对；类型2 属性-属性配对
+    var used={};
+    function add(t){if(!used[t]){used[t]=1;clues.push(t);}}
+    var ci=0,people=sh(PEOPLE.slice());
+    while(clues.length<6){
+      var p=people[ci%4];ci++;
+      var cat=CATS[Math.floor(Math.random()*3)];
+      add(p+' 的'+cat.n+'是'+sol[p+cat.n]);
+      if(clues.length>=6)break;
+      // 属性间配对：随机取两个人的某两属性关系
+      var cat2=CATS[Math.floor(Math.random()*3)],p2=PEOPLE[Math.floor(Math.random()*4)];
+      var v1=sol[p+cat.n],v2=sol[p2+cat2.n];
+      if(p===p2&&cat.n===cat2.n)continue;
+      add('喜欢'+v1+'的人，'+cat2.n+'是'+v2);
+    }
+    grid={};
+    PEOPLE.forEach(function(p){grid[p]={};});
+    CATS.forEach(function(cat){cat.it.forEach(function(it){PEOPLE.forEach(function(p){grid[p][cat.n+it]=0;});});});
+    // 正确答案直接标 y（供校验用，不显示）
+    PEOPLE.forEach(function(p){CATS.forEach(function(cat){grid[p][cat.n+sol[p+cat.n]]=1;});});
+  }
+  function render(){
+    document.getElementById('clues').innerHTML=clues.map(function(c){return '· '+c;}).join('<br>');
+    var el=document.getElementById('tables');el.innerHTML='';
+    CATS.forEach(function(cat){
+      var h='<div style="font-size:13px;color:var(--cyan);margin:10px 0 4px;font-weight:700">'+cat.n+'</div>';
+      var tb='<table class="tbl"><tr><th></th>'+cat.it.map(function(i){return '<th>'+i+'</th>';}).join('')+'</tr>';
+      PEOPLE.forEach(function(p){
+        tb+='<tr><th>'+p+'</th>';
+        cat.it.forEach(function(it){
+          var v=grid[p][cat.n+it];
+          var cls=v===1?'y':v===2?'n':'';
+          tb+='<td class="'+cls+'" data-p="'+p+'" data-c="'+cat.n+'" data-i="'+it+'">'+(v===1?'✓':v===2?'✗':'')+'</td>';
+        });
+        tb+='</tr>';
+      });
+      tb+='</table>';
+      var wrap=document.createElement('div');wrap.innerHTML=h+tb;
+      el.appendChild(wrap);
+    });
+    el.querySelectorAll('td').forEach(function(td){
+      td.addEventListener('click',function(){
+        var p=td.getAttribute('data-p'),c=td.getAttribute('data-c'),i=td.getAttribute('data-i');
+        grid[p][c+i]=(grid[p][c+i]+1)%3;
+        render();
+      });
+    });
+  }
+  function check(){
+    var ok=true;
+    PEOPLE.forEach(function(p){CATS.forEach(function(cat){cat.it.forEach(function(it){
+      var want=sol[p+cat.n]===it?1:0;
+      if(grid[p][cat.n+it]===1&&want!==1)ok=false;
+      if(grid[p][cat.n+it]===2&&want!==2)ok=false;
+    });});});
+    if(ok){
+      document.getElementById('ans').innerHTML=PEOPLE.map(function(p){
+        return p+'：'+CATS.map(function(c){return sol[p+c.n];}).join(' · ');
+      }).join('<br>');
+      document.getElementById('overlay').classList.add('show');
+    }else{alert('还有标注不对，再推推看');}
+  }
+  function next(){document.getElementById('overlay').classList.remove('show');gen();render();}
+  document.getElementById('check').addEventListener('click',check);
+  document.getElementById('new').addEventListener('click',next);
+  document.getElementById('newbtn').addEventListener('click',next);
+  document.getElementById('restart').addEventListener('click',next);
+  gen();render();
+})();
+</script>
+</body>
+</html>

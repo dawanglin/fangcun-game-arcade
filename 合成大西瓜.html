@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>合成大西瓜 · 网页版</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2357c96b'/%3E%3Cpath d='M12 2c2 3 2 5 0 8M12 14c-2 3-2 5 0 8M5 7c3 2 5 2 8 0M11 17c3 2 5 2 8 0' stroke='%23234a30' stroke-width='1.4' fill='none'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0d0f22;--surface:#161935;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    padding:18px 0 28px;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(560px 340px at 50% -10%, rgba(245,182,76,.10), transparent 60%),
+      radial-gradient(560px 340px at 80% 0%, rgba(88,211,232,.08), transparent 60%);
+  }
+  #app{width:min(94vw,430px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 10px}
+  .brand h1{font-size:20px;font-weight:800;letter-spacing:.02em}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .scores{display:flex;gap:8px}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 14px;text-align:right}
+  .score-box .k{font-size:10.5px;color:var(--muted);letter-spacing:.08em}
+  .score-box b{font-size:19px;font-weight:800;color:var(--amber);line-height:1.2}
+  .score-box.hi b{color:var(--cyan)}
+  .stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  canvas{display:block;width:100%;touch-action:none}
+  #overlay{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;flex-direction:column;gap:8px;
+    background:rgba(10,12,30,.78);backdrop-filter:blur(3px);text-align:center;z-index:5;
+  }
+  #overlay.show{display:flex}
+  #overlay h2{font-size:30px;font-weight:800;color:var(--danger)}
+  #overlay .res{font-size:14px;color:var(--muted)}
+  #overlay .res b{color:var(--amber);font-size:18px}
+  #restart{
+    margin-top:10px;border:0;cursor:pointer;font-family:inherit;
+    background:var(--amber);color:#20170a;font-size:16px;font-weight:700;
+    padding:11px 34px;border-radius:999px;transition:transform .12s ease;
+  }
+  #restart:active{transform:scale(.96)}
+  footer{padding:14px 6px 0;color:var(--muted);font-size:12px;text-align:center;line-height:1.8}
+  footer b{color:var(--text)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>合成大西瓜</h1>
+      <p>网页版 · 点击 / 触摸放置</p>
+    </div>
+    <div class="scores">
+      <div class="score-box"><div class="k">分数</div><b id="score">0</b></div>
+      <div class="score-box hi"><div class="k">最高</div><b id="high">0</b></div>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="game"></canvas>
+    <div id="overlay">
+      <h2>游戏结束</h2>
+      <div class="res">本局得分 <b id="finalScore">0</b> · 历史最高 <span id="finalHigh">0</span></div>
+      <button id="restart">再来一局</button>
+    </div>
+  </div>
+  <footer><b>玩法：</b>相同水果相碰会合成更高一级，合成到西瓜就赢。水果堆到顶部红线即失败。</footer>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('game'), ctx=cv.getContext('2d');
+  var W=420,H=640,DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=W*DPR;cv.height=H*DPR;ctx.scale(DPR,DPR);
+
+  var LINE_Y=106, FLOOR=H-8;
+  var GRAV=0.52, REST=0.35, DAMP=0.996, WALL_B=0.45;
+  var NAMES=['樱桃','草莓','葡萄','橘子','柠檬','猕猴桃','番茄','桃子','菠萝','椰子','西瓜'];
+  var COLORS=['#ff5d5d','#ff7e5f','#b06bff','#ffa23e','#ffd84d','#7bd86b','#ff6b81','#ffb3a0','#e8b64c','#c9a56b','#57c96b'];
+  var DARKS=['#8c1f1f','#93351f','#5a2a8c','#8f5210','#8a7410','#2f7a28','#8f2f45','#8f5c47','#7d5d14','#6d5530','#1f5e31'];
+  function rOf(l){return 13+(l-1)*5;}
+
+  var fruits=[],parts=[],texts=[],cur=null,nextLv=1;
+  var score=0,high=+(localStorage.getItem('fh')||0),over=false,warn=0,px=W/2;
+  var AC=null;
+  document.getElementById('high').textContent=high;
+
+  function sfx(level,merge){
+    try{
+      if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+      if(AC.state==='suspended')AC.resume();
+      var o=AC.createOscillator(),g=AC.createGain();
+      o.type=merge?'sine':'triangle';
+      o.frequency.value=merge?180*Math.pow(1.22,level):150;
+      g.gain.setValueAtTime(merge?0.14:0.06,AC.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.3);
+      o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+0.32);
+    }catch(e){}
+  }
+
+  function newFruit(l,x){
+    return {x:x,y:64,vx:0,vy:0,l:l,r:rOf(l),cd:16,dead:false};
+  }
+  function drop(){
+    if(over||cur)return;
+    cur=newFruit(nextLv,Math.max(rOf(nextLv),Math.min(W-rOf(nextLv),px)));
+    nextLv=1+Math.floor(Math.random()*5);
+    sfx(1,false);
+  }
+  function addScore(n){
+    score+=n;document.getElementById('score').textContent=score;
+    if(score>high){high=score;document.getElementById('high').textContent=high;localStorage.setItem('fh',high);}
+  }
+  function burst(x,y,color,n){
+    for(var i=0;i<n;i++){
+      var a=Math.random()*Math.PI*2,s=1+Math.random()*3;
+      parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.5,r:2+Math.random()*4,life:34,color:color});
+    }
+  }
+  function popText(x,y,txt){
+    texts.push({x:x,y:y,txt:txt,life:44});
+  }
+
+  function mergeAt(a,b){
+    a.dead=true;b.dead=true;
+    var l=a.l+1;
+    var f=newFruit(l,(a.x+b.x)/2);
+    f.y=(a.y+b.y)/2;f.vy=-1.5;
+    fruits.push(f);
+    addScore(10*l);
+    var c=COLORS[l-1];
+    burst(f.x,f.y,c,l===11?42:22+l*2);
+    popText(f.x,f.y-10,'+'+10*l);
+    sfx(l,true);
+    if(l===11)popText(f.x,f.y-46,'大西瓜！');
+  }
+
+  function step(){
+    if(over)return;
+    var i,j;
+    // 当前投掷水果下落
+    if(cur){
+      cur.vy+=GRAV;cur.x+=cur.vx;cur.y+=cur.vy;
+      wallBounce(cur);
+      if(cur.cd>0)cur.cd--;
+      if(cur.y+cur.r>=FLOOR){
+        cur.y=FLOOR-cur.r;
+        cur.vy*=-REST;cur.vx*=0.85;
+        if(Math.abs(cur.vy)<0.4){cur.vy=0;}
+        if(cur.vy===0&&Math.abs(cur.vx)<0.3){fruits.push(cur);cur=null;}
+      }else{
+        // 与已有水果碰撞
+        for(i=0;i<fruits.length;i++){resolve(cur,fruits[i]);if(cur===null)break;}
+      }
+      if(cur&&cur.cd>0&&cur.y-cur.r>LINE_Y)cur.cd=0; // 穿过红线后解除保护
+    }
+    // 已有水果
+    for(i=0;i<fruits.length;i++){
+      var f=fruits[i];if(f.dead)continue;
+      f.vy+=GRAV;f.vx*=DAMP;f.vy*=DAMP;
+      f.x+=f.vx;f.y+=f.vy;
+      wallBounce(f);
+      if(f.y+f.r>=FLOOR){
+        f.y=FLOOR-f.r;
+        if(f.vy>1){f.vy*=-REST;f.vx*=0.9;}else f.vy=0;
+        f.vx*=0.92;
+        if(Math.abs(f.vx)<0.05)f.vx=0;
+      }
+      if(f.cd>0)f.cd--;
+    }
+    // 两两碰撞 + 合并
+    for(var k=0;k<3;k++){
+      for(i=0;i<fruits.length;i++){
+        for(j=i+1;j<fruits.length;j++){
+          var a=fruits[i],b=fruits[j];
+          if(a.dead||b.dead)continue;
+          resolve(a,b);
+          if(a.dead||b.dead)break;
+        }
+        if(i<fruits.length&&fruits[i]&&fruits[i].dead)break;
+      }
+    }
+    fruits=fruits.filter(function(f){return !f.dead;});
+    // 粒子
+    for(i=parts.length-1;i>=0;i--){var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.vx*=0.96;p.life--;if(p.life<=0)parts.splice(i,1);}
+    for(i=texts.length-1;i>=0;i--){var t=texts[i];t.y-=0.8;t.life--;if(t.life<=0)texts.splice(i,1);}
+    // 危险判定
+    var danger=false;
+    for(i=0;i<fruits.length;i++){
+      var f=fruits[i];
+      if(!f.dead&&f.y-f.r<LINE_Y&&f.cd<=0){danger=true;break;}
+    }
+    if(danger){warn++;if(warn>80){gameOver();}}else{warn=0;}
+  }
+
+  function wallBounce(f){
+    if(f.x-f.r<2){f.x=2+f.r;f.vx*=-WALL_B;}
+    if(f.x+f.r>W-2){f.x=W-2-f.r;f.vx*=-WALL_B;}
+  }
+
+  function resolve(a,b){
+    var dx=b.x-a.x,dy=b.y-a.y;
+    var d=Math.sqrt(dx*dx+dy*dy),min=a.r+b.r;
+    if(d>=min||d===0)return;
+    var nx=dx/d,ny=dy/d,over=min-d;
+    var ma=a.r*a.r,mb=b.r*b.r,m=ma+mb;
+    a.x-=nx*over*(mb/m);a.y-=ny*over*(mb/m);
+    b.x+=nx*over*(ma/m);b.y+=ny*over*(ma/m);
+    // 弹性速度
+    var rvx=b.vx-a.vx,rvy=b.vy-a.vy;
+    var vn=rvx*nx+rvy*ny;
+    if(vn<0){
+      var imp=-(1+REST)*vn/2;
+      a.vx-=imp*nx*2; a.vy-=imp*ny*2;
+      b.vx+=imp*nx*2; b.vy+=imp*ny*2;
+    }
+    // 合并
+    if(a.l===b.l&&a.cd<=0&&b.cd<=0&&!a.dead&&!b.dead&&a!==cur&&b!==cur){
+      mergeAt(a,b);
+    }
+  }
+
+  function gameOver(){
+    over=true;
+    document.getElementById('finalScore').textContent=score;
+    document.getElementById('finalHigh').textContent=high;
+    document.getElementById('overlay').classList.add('show');
+  }
+  document.getElementById('restart').addEventListener('click',function(){
+    fruits=[];parts=[];texts=[];cur=null;score=0;over=false;warn=0;
+    nextLv=1+Math.floor(Math.random()*5);
+    document.getElementById('score').textContent=0;
+    document.getElementById('overlay').classList.remove('show');
+  });
+
+  // 指针控制
+  function toX(e){
+    var r=cv.getBoundingClientRect();
+    return (e.clientX-r.left)/r.width*W;
+  }
+  window.addEventListener('pointermove',function(e){px=toX(e);},{passive:true});
+  cv.addEventListener('pointerdown',function(e){e.preventDefault();px=toX(e);drop();});
+
+  // ===== 绘制 =====
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // 背景
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#151833');g.addColorStop(1,'#0e1126');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.04)';
+    ctx.lineWidth=1;
+    for(var x=0;x<=W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(var y=0;y<=H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // 危险线
+    var warnOn=warn>10&&Math.floor(warn/6)%2===0;
+    ctx.strokeStyle=warnOn?'rgba(255,93,93,.95)':'rgba(255,93,93,.28)';
+    ctx.lineWidth=warnOn?3:2;
+    ctx.setLineDash([10,8]);
+    ctx.beginPath();ctx.moveTo(0,LINE_Y);ctx.lineTo(W,LINE_Y);ctx.stroke();
+    ctx.setLineDash([]);
+    // 底部
+    ctx.strokeStyle='rgba(88,211,232,.35)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,FLOOR);ctx.lineTo(W,FLOOR);ctx.stroke();
+    // 水果
+    for(var i=0;i<fruits.length;i++)drawFruit(fruits[i],1);
+    if(cur)drawFruit(cur,0.55);
+    // 瞄准引导
+    if(cur){
+      ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;ctx.setLineDash([4,6]);
+      ctx.beginPath();ctx.moveTo(cur.x,LINE_Y);ctx.lineTo(cur.x,H);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // 下一个预览
+    ctx.fillStyle='rgba(22,25,53,.9)';
+    ctx.strokeStyle='rgba(255,255,255,.12)';
+    ctx.beginPath();ctx.roundRect(W-64,12,52,52,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.55)';
+    ctx.font='11px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.fillText('下一个',W-38,26);
+    drawFruit({x:W-38,y:48,l:nextLv,r:rOf(nextLv)},1);
+    // 粒子
+    for(var p=0;p<parts.length;p++){
+      var q=parts[p];
+      ctx.globalAlpha=Math.max(0,q.life/34);
+      ctx.fillStyle=q.color;
+      ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,6.283);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // 飘字
+    ctx.textAlign='center';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+    for(var t=0;t<texts.length;t++){
+      var tt=texts[t];
+      ctx.globalAlpha=Math.max(0,Math.min(1,tt.life/30));
+      ctx.fillStyle=tt.txt==='大西瓜！'?'#ffd84d':'#eef0ff';
+      ctx.fillText(tt.txt,tt.x,tt.y);
+    }
+    ctx.globalAlpha=1;
+    // 危险提示
+    if(warnOn){
+      ctx.fillStyle='rgba(255,93,93,.92)';
+      ctx.font='bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillText('危险！水果即将越线',W/2,LINE_Y-14);
+    }
+  }
+
+  function drawFruit(f,alpha){
+    var r=f.r,l=f.l;
+    var x=f.x,y=f.y;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    var g=ctx.createRadialGradient(x-r*0.35,y-r*0.35,r*0.15,x,y,r);
+    var c=COLORS[l-1],d=DARKS[l-1];
+    g.addColorStop(0,lighten(c));g.addColorStop(1,d);
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fill();
+    if(l===11){
+      ctx.strokeStyle='rgba(35,74,48,.65)';ctx.lineWidth=2.5;
+      for(var i=-1;i<=1;i++){
+        ctx.beginPath();
+        ctx.moveTo(x+r*0.7*Math.cos(-0.6+i*0.6),y+r*0.7*Math.sin(-0.6+i*0.6));
+        ctx.quadraticCurveTo(x-r*0.6*Math.cos(i*0.6),y-r*0.6*Math.sin(i*0.6),x+r*0.7*Math.cos(2.5+i*0.6),y+r*0.7*Math.sin(2.5+i*0.6));
+        ctx.stroke();
+      }
+    }
+    ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.92)';
+    ctx.font='bold '+Math.max(10,Math.min(15,r*0.62))+'px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(NAMES[l-1],x,y+1);
+    ctx.restore();
+  }
+  function lighten(hex){
+    var n=parseInt(hex.slice(1),16);
+    var r=(n>>16)+70,g2=((n>>8)&255)+70,b=(n&255)+70;
+    function c(v){return Math.min(255,v).toString(16).padStart(2,'0');}
+    return '#'+c(r)+c(g2)+c(b);
+  }
+
+  function loop(){step();draw();requestAnimationFrame(loop);}
+  // 保证 ctx.roundRect 存在
+  if(!ctx.roundRect){
+    ctx.roundRect=function(x,y,w,h,r){
+      this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+      this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();
+    };
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

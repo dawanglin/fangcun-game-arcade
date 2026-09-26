@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数桥 · 经典逻辑游戏馆</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='2' width='28' height='28' rx='6' fill='%23f0a93e'/><rect x='8' y='8' width='7' height='7' fill='%2310131c'/><rect x='17' y='8' width='7' height='7' fill='%2310131c'/><rect x='8' y='17' width='7' height='7' fill='%2310131c'/><rect x='17' y='17' width='7' height='7' fill='%2310131c'/></svg>">
+<style>
+
+:root{
+  --bg:#10131c; --panel:#191d2a; --panel2:#212638; --line:#2b3150;
+  --ink:#e9ecf6; --sub:#9aa3bf; --dim:#67708f;
+  --gold:#f0a93e; --teal:#41c7ae; --red:#e5534b; --blue:#6b93ff; --ok:#58c96b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,sans-serif;line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(1200px 600px at 70% -10%,rgba(65,199,174,.06),transparent),radial-gradient(900px 500px at 10% 0%,rgba(240,169,62,.05),transparent)}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+/* ===== header & tabs ===== */
+.top{text-align:center;padding:26px 0 6px}
+.top h1{font-size:30px;font-weight:800;letter-spacing:2px}
+.top h1 em{font-style:normal;color:var(--gold)}
+.top .sub{color:var(--sub);margin-top:6px;font-size:14px}
+.tabs{display:flex;justify-content:center;gap:14px;margin:26px 0 30px}
+.tab{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);color:var(--sub);
+  padding:11px 26px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;transition:.18s;font-family:inherit}
+.tab:hover{color:var(--ink);border-color:#3a4268}
+.tab.active{background:var(--panel2);color:var(--ink);box-shadow:0 0 0 1px inset}
+.tab .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tab.active .dot{box-shadow:0 0 10px var(--c)}
+/* ===== game cards ===== */
+.cat-group{display:flex;flex-direction:column;gap:22px}
+.hidden{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  border-left:4px solid var(--c);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.chead{display:flex;align-items:center;gap:10px;padding:16px 20px 0}
+.chead h2{font-size:19px;font-weight:700}
+.ic{width:22px;height:22px;color:var(--c);flex:none}
+.chead .badge{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.rule{color:var(--sub);font-size:13px;padding:6px 20px 0}
+.body{display:grid;grid-template-columns:1fr 230px;gap:16px;padding:16px 20px 14px}
+.ctrl{display:flex;flex-direction:column;gap:9px;justify-content:flex-start}
+.board{min-width:0;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.status{color:var(--sub);font-size:13px;padding:0 20px 16px;min-height:20px}
+.status b{color:var(--ink);font-weight:600}
+.status .win{color:var(--ok)} .status .lose{color:var(--red)} .status .warn{color:var(--gold)}
+/* ===== buttons & inputs ===== */
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:9px 14px;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:hover{border-color:#414b7a;background:#262c44}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--c);border-color:var(--c);color:#14161f;font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);background:var(--c)}
+.btn.ghost{background:transparent;color:var(--sub)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+input[type=text],input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 12px;font-size:14px;outline:none;font-family:inherit}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--c)}
+input[type=number]{width:88px}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.meter{display:flex;gap:14px;color:var(--sub);font-size:13px}
+.meter b{color:var(--ink)}
+/* ===== common board bits ===== */
+.cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:6px;font-size:15px;font-weight:600;user-select:none}
+.card4{display:flex;gap:10px;flex-wrap:wrap}
+.card4 .pk{width:76px;height:104px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:800;background:linear-gradient(160deg,#f6f8fd,#dfe4f0);color:#232a45;
+  box-shadow:0 6px 14px rgba(0,0,0,.35);border:1px solid #c9d0e2}
+.expr{width:min(420px,100%);font-size:17px;letter-spacing:1px}
+.pad{display:flex;flex-wrap:wrap;gap:7px;max-width:420px}
+.pad button{min-width:44px;padding:7px 0;font-size:16px}
+/* Nim */
+.piles{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+.pile{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pile .stones{display:flex;flex-wrap:wrap;gap:5px;width:92px;justify-content:center;min-height:96px;padding:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.stone{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f7c46b,#c97f18);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.pile .pn{font-size:13px;color:var(--sub);font-weight:600}
+.pile.sel .stones{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,169,62,.35)}
+.pile.sel .pn{color:var(--gold)}
+/* slide puzzle */
+.slideboard{display:grid;gap:6px;background:var(--panel2);border:1px solid var(--line);padding:8px;border-radius:12px}
+.tile{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2b3354,#232a45);
+  border-radius:8px;font-size:22px;font-weight:800;color:#cdd6f5;cursor:pointer;user-select:none;box-shadow:0 3px 8px rgba(0,0,0,.3);transition:background .12s}
+.tile:hover{background:#313a61}
+.tile.blank{background:transparent;box-shadow:none;cursor:default}
+/* jugs */
+.jugs{display:flex;gap:34px;align-items:flex-end;flex-wrap:wrap}
+.jug{display:flex;flex-direction:column;align-items:center;gap:8px}
+.jar{width:74px;height:150px;border:3px solid var(--line);border-top:none;border-radius:0 0 10px 10px;position:relative;background:rgba(20,26,44,.5);overflow:hidden}
+.jar .water{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(65,199,174,.75),rgba(65,199,174,.5));transition:height .3s}
+.jar .cap{position:absolute;top:0;left:-8px;right:-8px;height:6px;background:var(--line);border-radius:3px}
+.jug .capv{font-size:12px;color:var(--sub)} .jug .name{font-size:13px;font-weight:700}
+.goalbar{margin-top:4px;font-size:13px;color:var(--sub)}
+.goalbar b{color:var(--teal)}
+/* bridges */
+.brsvg{width:100%;max-width:640px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* slitherlink */
+.lpsvg{width:100%;max-width:560px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* minesweeper */
+.minegrid{display:grid;gap:3px;background:var(--panel2);border:1px solid var(--line);padding:7px;border-radius:10px;user-select:none}
+.mcell{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:#2a3150;
+  border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+.mcell.rev{background:#1d2339;cursor:default}
+.mcell.mine-hit{background:var(--red)}
+.mcell.flag{background:#26304d}
+.mcell.f1{color:#7fd0ff}.mcell.f2{color:#58c96b}.mcell.f3{color:#f0a93e}.mcell.f4{color:#6b93ff}.mcell.f5{color:#e07a5f}.mcell.f6{color:#41c7ae}.mcell.f7{color:#f0a93e}.mcell.f8{color:#e5534b}
+/* maze */
+.mzcanvas{width:100%;max-width:600px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;display:block;touch-action:none}
+.toggle{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--c)}
+/* toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#262c44;border:1px solid #414b7a;
+  color:var(--ink);padding:10px 20px;border-radius:10px;font-size:14px;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;top:28px}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:44px}
+@media (max-width:760px){
+  .body{grid-template-columns:1fr}
+  .ctrl{flex-direction:row;flex-wrap:wrap}
+  .top h1{font-size:24px}
+  .tabs{gap:8px}
+  .tab{padding:9px 16px;font-size:13px}
+  .cell{width:30px;height:30px;font-size:14px}
+  .mcell{width:26px;height:26px}
+}
+
+.back{color:var(--teal);text-decoration:none;font-weight:600}
+.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>数桥</h1>
+  <p class="sub">经典逻辑游戏馆 · <a class="back" href="经典逻辑游戏合集.html">返回游戏馆</a></p>
+</header>
+<main>
+<article class="card" style="--c:var(--teal)">
+    <div class="chead">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.4 6h7.2M6 8.4v7.2M18 8.4v7.2M8.4 18h7.2"/></svg>
+      <h2>数桥</h2><span class="badge">Hashi</span>
+    </div>
+    <p class="rule">在相邻岛屿之间架桥（可架 1～2 座，横竖不交叉），使每岛连接数等于其数字，且全图连通。</p>
+    <div class="body">
+      <div class="board">
+        <div id="bridgeBoard"></div>
+      </div>
+      <div class="ctrl">
+        <label style="color:var(--sub);font-size:13px">岛屿规模</label>
+        <div class="btnrow" id="bridgeLv"></div>
+        <button class="btn" id="bridgeNew">新谜题</button>
+        <button class="btn" id="bridgeCheck">检查</button>
+        <button class="btn" id="bridgeHint">提示</button>
+      </div>
+    </div>
+    <div class="status" id="bridgeStatus">在岛屿之间点击连线，可架 1 或 2 座桥。</div>
+  </article>
+</main>
+<footer>经典逻辑游戏馆 · 本地运行无需联网</footer>
+</div>
+<script>
+"use strict";
+/* ================= 共享工具 ================= */
+const $=id=>document.getElementById(id);
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e;};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function toast(msg){let t=$('toastBox');if(!t){t=el('div');t.id='toastBox';t.className='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+/* 有理数运算（避免浮点误差，用于 24 点） */
+function F(n,d){this.n=n;this.d=d||1;this.simp();}
+F.prototype.simp=function(){const g=gcd(Math.abs(this.n),Math.abs(this.d));this.n/=g;this.d/=g;if(this.d<0){this.n=-this.n;this.d=-this.d;}return this;};
+F.prototype.add=function(o){return new F(this.n*o.d+o.n*this.d,this.d*o.d);};
+F.prototype.sub=function(o){return new F(this.n*o.d-o.n*this.d,this.d*o.d);};
+F.prototype.mul=function(o){return new F(this.n*o.n,this.d*o.d);};
+F.prototype.div=function(o){return o.n===0?null:new F(this.n*o.d,this.d*o.n);};
+F.prototype.eq=function(o){return this.n===o.n&&this.d===o.d;};
+/* 表达式求值（中缀 → RPN → 有理数） */
+function tokExpr(s){
+  const t=[];let i=0;s=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/＋/g,'+').replace(/[（）]/g,c=>c==='（'?'(':')');
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(/[0-9]/.test(c)){let j=i;while(j<s.length&&/[0-9]/.test(s[j]))j++;t.push({k:'n',v:parseInt(s.slice(i,j),10)});i=j;continue;}
+    if('+-*/()'.includes(c)){t.push({k:c});i++;continue;}
+    return null;
+  }
+  return t;
+}
+function evalExpr(s){
+  const t=tokExpr(s);if(!t||t.length===0)return null;
+  const out=[],op=[];const prec={'+':1,'-':1,'*':2,'/':2};
+  for(const x of t){
+    if(x.k==='n')out.push(x.v);
+    else if(x.k==='(')op.push(x.k);
+    else if(x.k===')'){
+      while(op.length&&op[op.length-1]!=='('){out.push(op.pop());}
+      if(!op.length)return null;op.pop();
+    }else{
+      while(op.length&&op[op.length-1]!=='('&&prec[op[op.length-1]]>=prec[x.k])out.push(op.pop());
+      op.push(x.k);
+    }
+  }
+  while(op.length){if(op[op.length-1]==='(')return null;out.push(op.pop());}
+  const st=[];
+  for(const x of out){
+    if(typeof x==='number')st.push(new F(x,1));
+    else{
+      const b=st.pop(),a=st.pop();if(a===undefined||b===undefined)return null;
+      let r=x==='+'?a.add(b):x==='-'?a.sub(b):x==='*'?a.mul(b):a.div(b);
+      if(!r)return null;st.push(r);
+    }
+  }
+  return st.length===1?st[0]:null;
+}
+
+
+const BR={w:8,h:6,islands:[],edges:{},sol:{},sel:-1};
+const BR_CELL=56;
+function bridgeCross(a,b,c,d){
+  if(a.y===b.y&&c.x===d.x){
+    const y=a.y,x=c.x;
+    return x>Math.min(a.x,b.x)&&x<Math.max(a.x,b.x)&&y>Math.min(c.y,d.y)&&y<Math.max(c.y,d.y);
+  }
+  if(a.x===b.x&&c.y===d.y){
+    const x=a.x,y=c.y;
+    return y>Math.min(a.y,b.y)&&y<Math.max(a.y,b.y)&&x>Math.min(c.x,d.x)&&x<Math.max(c.x,d.x);
+  }
+  return false;
+}
+function bridgeRender(){
+  const W=BR.w,H=BR.h,cell=BR_CELL;
+  const svg=BR.svg;
+  svg.setAttribute('viewBox','0 0 '+(W*cell)+' '+(H*cell));
+  svg.innerHTML='';
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',(x+.5)*cell);c.setAttribute('cy',(y+.5)*cell);c.setAttribute('r',1.8);c.setAttribute('fill','#2b3150');
+    svg.appendChild(c);
+  }
+  for(const k in BR.edges){
+    const cnt=BR.edges[k];if(!cnt)continue;
+    const [i,j]=k.split('-').map(Number);
+    const a=BR.islands[i],b=BR.islands[j];
+    const x1=(a.x+.5)*cell,y1=(a.y+.5)*cell,x2=(b.x+.5)*cell,y2=(b.y+.5)*cell;
+    const horiz=a.y===b.y;
+    for(let q=0;q<cnt;q++){
+      const oX=horiz?0:(q===0?-5:5),oY=horiz?(q===0?-5:5):0;
+      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',x1+oX);l.setAttribute('y1',y1+oY);
+      l.setAttribute('x2',x2+oX);l.setAttribute('y2',y2+oY);
+      l.setAttribute('stroke','var(--teal)');l.setAttribute('stroke-width',5);l.setAttribute('stroke-linecap','round');
+      svg.appendChild(l);
+    }
+  }
+  BR.islands.forEach((is,i)=>{
+    const cx=(is.x+.5)*cell,cy=(is.y+.5)*cell;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.style.cursor='pointer';
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',15);
+    c.setAttribute('fill',BR.sel===i?'#2c3250':'#232a45');
+    c.setAttribute('stroke',BR.sel===i?'var(--gold)':'var(--teal)');c.setAttribute('stroke-width',2.5);
+    g.appendChild(c);
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',cx);t.setAttribute('y',cy+4.5);
+    t.setAttribute('text-anchor','middle');t.setAttribute('font-size',14);t.setAttribute('font-weight',700);
+    t.setAttribute('fill',BR.sel===i?'var(--gold)':'#e9ecf6');
+    t.textContent=is.num;
+    g.appendChild(t);
+    g.onclick=e=>{e.stopPropagation();bridgePick(i);};
+    svg.appendChild(g);
+  });
+}
+function bridgeStatus(msg,cls){$('bridgeStatus').innerHTML='<b class="'+(cls||'')+'">'+msg+'</b>';}
+function bridgePick(i){
+  if(BR.sel===-1){BR.sel=i;bridgeRender();return;}
+  if(BR.sel===i){BR.sel=-1;bridgeRender();return;}
+  const a=BR.islands[BR.sel],b=BR.islands[i];
+  const horiz=a.y===b.y,vert=a.x===b.x;
+  let clear=horiz||vert;
+  if(clear){
+    for(const is of BR.islands){
+      if(horiz&&is.y===a.y&&is.x>Math.min(a.x,b.x)&&is.x<Math.max(a.x,b.x)){clear=false;break;}
+      if(vert&&is.x===a.x&&is.y>Math.min(a.y,b.y)&&is.y<Math.max(a.y,b.y)){clear=false;break;}
+    }
+  }
+  if(!clear){toast('两岛需同行或同列，且中间无其它岛');BR.sel=-1;bridgeRender();return;}
+  const key=Math.min(BR.sel,i)+'-'+Math.max(BR.sel,i);
+  BR.edges[key]=((BR.edges[key]||0)+1)%3;
+  BR.sel=-1;bridgeRender();
+}
+function bridgeNew(level){
+  level=level||8;
+  let done=false;
+  for(let t=0;t<80&&!done;t++){
+    const cand=[];
+    for(let y=0;y<BR.h;y++)for(let x=0;x<BR.w;x++)cand.push({x,y});
+    shuffle(cand);
+    const chosen=[];
+    for(const c of cand){
+      if(chosen.some(o=>Math.abs(o.x-c.x)<=1&&Math.abs(o.y-c.y)<=1))continue;
+      chosen.push(c);
+      if(chosen.length>=level)break;
+    }
+    if(chosen.length!==level)continue;
+    BR.islands=chosen.map(p=>({x:p.x,y:p.y,num:0}));
+    const edges=[];
+    for(let i=0;i<level;i++)for(let j=i+1;j<level;j++){
+      const a=BR.islands[i],b=BR.islands[j];
+      if(a.y===b.y&&a.x!==b.x){
+        let ok=true;
+        for(let k=0;k<level;k++)if(k!==i&&k!==j&&BR.islands[k].y===a.y&&BR.islands[k].x>Math.min(a.x,b.x)&&BR.islands[k].x<Math.max(a.x,b.x)){ok=false;break;}
+        if(ok)edges.push([i,j]);
+      }else if(a.x===b.x&&a.y!==b.y){
+        let ok=true;
+        for(let k=0;k<level;k++)if(k!==i&&k!==j&&BR.islands[k].x===a.x&&BR.islands[k].y>Math.min(a.y,b.y)&&BR.islands[k].y<Math.max(a.y,b.y)){ok=false;break;}
+        if(ok)edges.push([i,j]);
+      }
+    }
+    shuffle(edges);
+    const par=[...Array(level).keys()];
+    const find=x=>par[x]===x?x:(par[x]=find(par[x]));
+    const tree=[];
+    for(const [i,j] of edges){const ri=find(i),rj=find(j);if(ri!==rj){par[ri]=rj;tree.push([i,j]);}}
+    if(tree.length!==level-1)continue;
+    BR.sol={};
+    BR.islands.forEach(p=>p.num=0);
+    for(const [i,j] of tree){const k=Math.min(i,j)+'-'+Math.max(i,j);BR.sol[k]=1;BR.islands[i].num++;BR.islands[j].num++;}
+    const used=tree.map(e=>Math.min(e[0],e[1])+'-'+Math.max(e[0],e[1]));
+    const canAdd=e=>{
+      const [i,j]=e;
+      if(BR.islands[i].num>=8||BR.islands[j].num>=8)return false;
+      const k=Math.min(i,j)+'-'+Math.max(i,j);
+      if(used.includes(k))return false;
+      for(const k2 of used){
+        const [p,q]=k2.split('-').map(Number);
+        if(bridgeCross(BR.islands[i],BR.islands[j],BR.islands[p],BR.islands[q]))return false;
+      }
+      return true;
+    };
+    shuffle(edges);
+    for(const e of edges){
+      if(Math.random()<0.5&&canAdd(e)){
+        used.push(Math.min(e[0],e[1])+'-'+Math.max(e[0],e[1]));
+        BR.sol[Math.min(e[0],e[1])+'-'+Math.max(e[0],e[1])]=1;
+        BR.islands[e[0]].num++;BR.islands[e[1]].num++;
+      }
+    }
+    for(const k of used.slice()){
+      if(Math.random()<0.35){
+        const [i,j]=k.split('-').map(Number);
+        if(BR.islands[i].num<8&&BR.islands[j].num<8){BR.sol[k]=2;BR.islands[i].num++;BR.islands[j].num++;}
+      }
+    }
+    done=true;
+  }
+  BR.edges={};BR.sel=-1;
+  bridgeRender();
+  bridgeStatus('共 '+BR.islands.length+' 座岛。依次点击两座岛架桥：0→1→2→0 循环。');
+}
+function bridgeCheck(){
+  const deg=BR.islands.map(()=>0);
+  let total=0;
+  for(const k in BR.edges){
+    const cnt=BR.edges[k];if(!cnt)continue;
+    const [i,j]=k.split('-').map(Number);
+    deg[i]+=cnt;deg[j]+=cnt;total+=cnt;
+  }
+  let numOk=true;
+  BR.islands.forEach((is,i)=>{if(deg[i]!==is.num)numOk=false;});
+  if(!numOk){
+    const bad=BR.islands.map((is,i)=>deg[i]!==is.num?i:-1).filter(i=>i>=0).slice(0,3).map(i=>'('+(BR.islands[i].x+1)+','+(BR.islands[i].y+1)+' 需 '+BR.islands[i].num+' 现有 '+deg[i]+')');
+    bridgeStatus('度数不匹配：'+bad.join(' '),'lose');
+    return;
+  }
+  if(total===0){bridgeStatus('还没有架任何桥。','lose');return;}
+  // 连通性
+  const par=[...Array(BR.islands.length).keys()];
+  const find=x=>par[x]===x?x:(par[x]=find(par[x]));
+  for(const k in BR.edges){
+    if(!BR.edges[k])continue;
+    const [i,j]=k.split('-').map(Number);
+    const ri=find(i),rj=find(j);if(ri!==rj)par[ri]=rj;
+  }
+  const roots=new Set();
+  BR.islands.forEach((_,i)=>roots.add(find(i)));
+  if(roots.size>1){
+    bridgeStatus('所有岛屿必须通过桥连通成一个整体。','lose');
+    return;
+  }
+  bridgeStatus('正确！所有岛屿度数满足且全图连通。','win');
+  toast('数桥完成！');
+}
+function bridgeHint(){
+  for(const k in BR.sol){
+    const pc=BR.edges[k]||0,solc=BR.sol[k];
+    if(pc<solc){
+      const [i,j]=k.split('-').map(Number);
+      const a=BR.islands[i],b=BR.islands[j];
+      bridgeStatus('提示：('+(a.x+1)+','+(a.y+1)+') 与 ('+(b.x+1)+','+(b.y+1)+') 之间还需架 '+(solc-pc)+' 座桥。','warn');
+      return;
+    }
+  }
+  bridgeStatus('桥数均已正确，检查整体连通性即可。','warn');
+}
+(function(){
+  const box=$('bridgeBoard');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','brsvg');
+  BR.svg=svg;
+  box.appendChild(svg);
+  svg.addEventListener('click',e=>{
+    const rect=svg.getBoundingClientRect();
+    const vb=svg.viewBox.baseVal;
+    const px=(e.clientX-rect.left)*vb.width/rect.width;
+    const py=(e.clientY-rect.top)*vb.height/rect.height;
+    let bi=-1,bd=32;
+    BR.islands.forEach((is,i)=>{
+      const cx=(is.x+.5)*BR_CELL,cy=(is.y+.5)*BR_CELL;
+      const d=Math.hypot(px-cx,py-cy);
+      if(d<bd){bd=d;bi=i;}
+    });
+    if(bi>=0)bridgePick(bi);
+  });
+  const lv=$('bridgeLv');
+  [[6,'6 岛'],[8,'8 岛'],[10,'10 岛']].forEach(([n,label],idx)=>{
+    const b=el('button','btn sm'+(idx===1?' primary':''),label);
+    b.onclick=()=>{lv.querySelectorAll('button').forEach(x=>x.classList.remove('primary'));b.classList.add('primary');bridgeNew(n);};
+    lv.appendChild(b);
+  });
+})();
+$('bridgeNew').onclick=()=>bridgeNew();
+$('bridgeCheck').onclick=bridgeCheck;
+$('bridgeHint').onclick=bridgeHint;
+bridgeNew(8);
+
+
+</script>
+</body>
+</html>

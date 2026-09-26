@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>见缝插针</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Ccircle cx='12' cy='12' r='6' fill='%23b06bff'/%3E%3Cpath d='M12 18v3M12 6V3M18 12h3M6 12H3' stroke='%23b06bff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(560px 340px at 50% -10%, rgba(176,107,255,.12), transparent 60%),
+      radial-gradient(560px 340px at 85% 5%, rgba(245,182,76,.08), transparent 60%);}
+  #app{width:min(94vw,440px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}
+  .brand p{font-size:11.5px;color:var(--muted)}
+  .scores{display:flex;gap:8px}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 14px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted);letter-spacing:.06em}
+  .score-box b{font-size:18px;font-weight:800;color:var(--amber);line-height:1.25;display:block}
+  .score-box.hi b{color:var(--cyan)}
+  .stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+    box-shadow:0 12px 40px rgba(0,0,0,.4);background:var(--surface);max-width:420px;margin:0 auto}
+  canvas{display:block;width:100%;touch-action:none}
+  .overlay{position:absolute;inset:0;display:none;z-index:5;align-items:center;justify-content:center;
+    flex-direction:column;gap:8px;background:rgba(10,12,30,.8);text-align:center;padding:20px}
+  .overlay.show{display:flex}
+  .overlay h3{font-size:26px;font-weight:800}
+  .overlay .res{font-size:13.5px;color:var(--muted)}
+  .overlay .res b{color:var(--amber)}
+  .btn{margin-top:10px;border:0;cursor:pointer;font-family:inherit;background:var(--amber);
+    color:#20170a;font-size:15px;font-weight:700;padding:10px 30px;border-radius:999px;transition:transform .12s ease}
+  .btn:active{transform:scale(.96)}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>见缝插针</h1><p>点击 / 触摸发射</p></div>
+    <div class="scores">
+      <div class="score-box"><span class="k">针数</span><b id="score">0</b></div>
+      <div class="score-box hi"><span class="k">最高</span><b id="high">0</b></div>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="overlay">
+      <h3 style="color:var(--danger)">插到针了！</h3>
+      <div class="res">本局针数 <b id="final">0</b></div>
+      <button class="btn" id="restart">再来一局</button>
+    </div>
+  </div>
+  <p class="tip">点击发射针，扎进旋转圆盘，别碰到已插的针</p>
+</div>
+<script>
+(function(){
+  var KEY='tpinhi';
+  var cv=document.getElementById('game'),ctx=cv.getContext('2d');
+  var W=420,H=520,CX=W/2,CY=190,R=64,PIN=48;
+  var DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=W*DPR;cv.height=H*DPR;ctx.scale(DPR,DPR);
+  var rot=0,speed=0.012,pins=[],fly=null,score=0,over=false,flash=0;
+  var high=+(localStorage.getItem(KEY)||0);
+  document.getElementById('high').textContent=high;
+  function updateScore(){
+    score++;document.getElementById('score').textContent=score;
+    if(score>high){high=score;document.getElementById('high').textContent=high;localStorage.setItem(KEY,high);}
+  }
+  function crash(){
+    over=true;flash=16;
+    document.getElementById('final').textContent=score;
+    document.getElementById('overlay').classList.add('show');
+  }
+  function shoot(){
+    if(over||fly)return;
+    fly={x:CX,y:H+14};
+  }
+  function step(){
+    rot+=speed;
+    if(rot>6.283)rot-=6.283;
+    if(fly){
+      fly.y-=12;
+      var dx=fly.x-CX,dy=fly.y-CY;
+      if(Math.sqrt(dx*dx+dy*dy)<=R+4){
+        var a=rot;
+        for(var i=0;i<pins.length;i++){
+          var d=Math.abs(((a-pins[i]+Math.PI)%(2*Math.PI))-Math.PI);
+          if(d<0.055){crash();fly=null;return;}
+        }
+        pins.push(a);
+        updateScore();
+        speed+=0.0011;
+        fly=null;
+      }
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#171a35');g.addColorStop(1,'#0e1126');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;
+    for(var x=0;x<=W;x+=26){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(var y=0;y<=H;y+=26){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // 已插针（从盘心沿角度向外）
+    ctx.lineCap='round';
+    for(var i=0;i<pins.length;i++){
+      var a=pins[i];
+      var ex=CX+Math.cos(a)*(R+20),ey=CY+Math.sin(a)*(R+20);
+      ctx.strokeStyle='#eef0ff';ctx.lineWidth=5;
+      ctx.beginPath();ctx.moveTo(CX, CY);ctx.lineTo(ex,ey);ctx.stroke();
+      ctx.fillStyle='#f5b64c';
+      ctx.beginPath();ctx.arc(ex,ey,4.5,0,6.283);ctx.fill();
+    }
+    // 飞行中的针
+    if(fly){
+      ctx.strokeStyle='#ffd84d';ctx.lineWidth=5;
+      ctx.beginPath();ctx.moveTo(fly.x,fly.y);ctx.lineTo(fly.x,fly.y-PIN);ctx.stroke();
+      ctx.fillStyle='#f5b64c';
+      ctx.beginPath();ctx.arc(fly.x,fly.y-PIN,4.5,0,6.283);ctx.fill();
+    }
+    // 圆盘
+    var dg=ctx.createRadialGradient(CX-R*0.3,CY-R*0.3,R*0.2,CX,CY,R);
+    dg.addColorStop(0,'#8f6bff');dg.addColorStop(1,'#4b2fa8');
+    ctx.fillStyle=dg;
+    ctx.beginPath();ctx.arc(CX,CY,R,0,6.283);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(CX,CY,R,0,6.283);ctx.stroke();
+    // 旋转刻度
+    ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=2.5;
+    for(var k=0;k<8;k++){
+      var a2=rot+k*0.785;
+      ctx.beginPath();
+      ctx.moveTo(CX+Math.cos(a2)*(R-14),CY+Math.sin(a2)*(R-14));
+      ctx.lineTo(CX+Math.cos(a2)*(R-4),CY+Math.sin(a2)*(R-4));
+      ctx.stroke();
+    }
+    ctx.fillStyle='#ffd84d';
+    ctx.beginPath();ctx.arc(CX,CY,7,0,6.283);ctx.fill();
+    // 底部发射线
+    ctx.strokeStyle='rgba(255,216,77,.25)';ctx.lineWidth=2;ctx.setLineDash([6,8]);
+    ctx.beginPath();ctx.moveTo(CX,H-20);ctx.lineTo(CX,H);ctx.stroke();ctx.setLineDash([]);
+    // 碰撞闪光
+    if(flash>0){
+      ctx.fillStyle='rgba(255,93,93,'+(flash/16*0.5)+')';
+      ctx.fillRect(0,0,W,H);flash--;
+    }
+  }
+  function loop(){
+    step();draw();requestAnimationFrame(loop);
+  }
+  function init(){
+    rot=0;speed=0.012;pins=[];fly=null;score=0;over=false;flash=0;
+    document.getElementById('score').textContent=0;
+    document.getElementById('high').textContent=+(localStorage.getItem(KEY)||0);
+    document.getElementById('overlay').classList.remove('show');
+  }
+  document.getElementById('restart').addEventListener('click',init);
+  cv.addEventListener('pointerdown',function(e){e.preventDefault();shoot();});
+  init();
+  loop();
+})();
+</script>
+</body>
+</html>

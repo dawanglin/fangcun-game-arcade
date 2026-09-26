@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 跨端热门小游戏精选</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23f5b64c'/%3E%3Cpath d='M8 9h8a4 4 0 0 1 4 4.6l-.7 3a2 2 0 0 1-3.9.5l-.5-1.4H9.1l-.5 1.4a2 2 0 0 1-3.9-.5l-.7-3A4 4 0 0 1 8 9Z' fill='%230d0f22'/%3E%3Ccircle cx='10' cy='12.3' r='1.3' fill='%2358d3e8'/%3E%3Ccircle cx='14' cy='12.3' r='1.3' fill='%2358d3e8'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0d0f22;
+    --surface:#161935;
+    --surface-2:#1c2047;
+    --line:rgba(255,255,255,.09);
+    --text:#eef0ff;
+    --muted:#9aa2cc;
+    --amber:#f5b64c;
+    --cyan:#58d3e8;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    line-height:1.7;
+    min-height:100vh;
+  }
+  /* 背景：极淡的网格 + 顶部光晕，营造街机氛围但不抢内容 */
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(720px 420px at 18% -8%, rgba(245,182,76,.10), transparent 62%),
+      radial-gradient(720px 420px at 85% -6%, rgba(88,211,232,.10), transparent 62%),
+      repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.025) 31px 32px),
+      repeating-linear-gradient(90deg, transparent 0 31px, rgba(255,255,255,.025) 31px 32px);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ===== Hero ===== */
+  header{padding:72px 0 34px;text-align:center}
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;color:var(--amber);
+    border:1px solid rgba(245,182,76,.35);
+    background:rgba(245,182,76,.08);
+    padding:5px 14px;border-radius:999px;
+    letter-spacing:.12em;
+  }
+  .hero-badge svg{width:14px;height:14px;flex:none}
+  h1{
+    font-size:clamp(30px,5vw,48px);
+    font-weight:800;line-height:1.25;
+    margin:20px 0 14px;
+    animation:rise .7s ease both;
+  }
+  .hero-sub{
+    color:var(--muted);
+    font-size:clamp(14px,2vw,16px);
+    max-width:620px;margin:0 auto;
+    animation:rise .7s .08s ease both;
+  }
+  .stats{
+    display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+    margin-top:26px;
+    animation:rise .7s .16s ease both;
+  }
+  .stat{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:10px 20px;
+    display:flex;align-items:baseline;gap:8px;
+  }
+  .stat b{font-size:22px;color:var(--amber);font-weight:800}
+  .stat span{font-size:13px;color:var(--muted)}
+
+  /* ===== 筛选 ===== */
+  .filters{
+    display:flex;justify-content:center;gap:10px;flex-wrap:wrap;
+    margin:10px 0 30px;
+  }
+  .chip-btn{
+    appearance:none;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);font-size:14px;padding:8px 18px;border-radius:999px;
+    cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s,background .15s;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .chip-btn svg{width:15px;height:15px}
+  .chip-btn:hover{border-color:rgba(255,255,255,.25);color:var(--text)}
+  .chip-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .chip-btn.active{
+    background:var(--amber);border-color:var(--amber);color:#20170a;font-weight:600;
+  }
+  .count-line{text-align:center;font-size:13px;color:var(--muted);margin:-14px 0 22px}
+
+  /* ===== 卡片网格 ===== */
+  .grid{
+    display:grid;gap:16px;
+    grid-template-columns:repeat(4,1fr);
+  }
+  @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  .game-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;display:flex;flex-direction:column;gap:10px;
+    transition:transform .15s ease,border-color .15s ease;
+  }
+  .game-card:hover{transform:translateY(-3px);border-color:rgba(245,182,76,.4)}
+  .game-card.hide{display:none}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .idx{
+    font-size:12px;font-weight:700;color:var(--muted);
+    border:1px solid var(--line);border-radius:8px;padding:2px 8px;
+  }
+  .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;padding:3px 10px;border-radius:999px;white-space:nowrap;
+  }
+  .tag svg{width:13px;height:13px}
+  .tag-puzzle{background:rgba(88,211,232,.12);color:var(--cyan)}
+  .tag-versus{background:rgba(245,182,76,.12);color:var(--amber)}
+  .tag-shop{background:rgba(160,210,120,.14);color:#a8d67c}
+  .tag-story{background:rgba(190,150,255,.14);color:#c4a4ff}
+  .tag-action{background:rgba(255,130,120,.14);color:#ff8a7a}
+  .game-card h3{font-size:19px;font-weight:700;line-height:1.35}
+  .game-card p{font-size:13.5px;color:var(--muted);flex:1}
+  .platforms{display:flex;gap:8px;flex-wrap:wrap}
+  .platform{
+    font-size:12px;color:var(--text);
+    background:var(--surface-2);border:1px solid var(--line);
+    border-radius:8px;padding:2px 10px;
+  }
+
+  /* ===== 选玩贴士 ===== */
+  .tips{margin:58px 0 20px}
+  .tips h2{font-size:24px;font-weight:800;margin-bottom:6px}
+  .tips .tips-sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .tips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:900px){.tips-grid{grid-template-columns:1fr}}
+  .tip-card{
+    background:linear-gradient(160deg,var(--surface-2),var(--surface));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;display:flex;flex-direction:column;gap:8px;
+  }
+  .tip-why{
+    font-size:12.5px;color:var(--amber);letter-spacing:.06em;
+  }
+  .tip-card h3{font-size:18px;font-weight:700}
+  .tip-card p{font-size:13.5px;color:var(--muted)}
+
+  footer{
+    margin-top:64px;padding:26px 0 40px;text-align:center;
+    border-top:1px solid var(--line);color:var(--muted);font-size:13px;
+  }
+
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-joystick" viewBox="0 0 24 24"><path d="M8 9h8a4 4 0 0 1 4 4.6l-.7 3a2 2 0 0 1-3.9.5l-.5-1.4H9.1l-.5 1.4a2 2 0 0 1-3.9-.5l-.7-3A4 4 0 0 1 8 9Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="12.3" r="1.3" fill="currentColor"/><circle cx="14" cy="12.3" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M13 13h3.5a3.5 3.5 0 0 1 3.5 3.5V20h-7z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5.5 13.5H11l-1 7.5L18.5 10.5H13l1-7.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4.5 10 6 5h12l1.5 5M4.5 10h15M4.5 10v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V10M8.5 15.5V20h7v-4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 8 8 8 8 0 0 1-8 8 9 9 0 0 1-3.9-.86L4 20l.86-4.1A8 8 0 0 1 4 12a8 8 0 0 1 8-8Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap">
+    <span class="hero-badge">
+      <svg><use xlink:href="#i-joystick"/></svg>
+      2026 年度精选
+    </span>
+    <h1>跨端热门小游戏</h1>
+    <p class="hero-sub">益智解谜、休闲竞技、模拟经营、文字生存……覆盖多品类，大部分支持 iOS、安卓与网页多端游玩。</p>
+    <div class="stats">
+      <div class="stat"><b>10</b><span>款精选游戏</span></div>
+      <div class="stat"><b>5</b><span>大品类</span></div>
+      <div class="stat"><b>3</b><span>端平台：iOS / 安卓 / 网页</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="filters" aria-label="按品类筛选">
+    <button class="chip-btn active" data-cat="all">全部</button>
+    <button class="chip-btn" data-cat="puzzle"><svg><use xlink:href="#i-puzzle"/></svg>益智休闲</button>
+    <button class="chip-btn" data-cat="versus"><svg><use xlink:href="#i-bolt"/></svg>竞技对战</button>
+    <button class="chip-btn" data-cat="shop"><svg><use xlink:href="#i-shop"/></svg>模拟经营</button>
+    <button class="chip-btn" data-cat="story"><svg><use xlink:href="#i-chat"/></svg>文字剧情</button>
+    <button class="chip-btn" data-cat="action"><svg><use xlink:href="#i-target"/></svg>动作射击</button>
+  </nav>
+  <p class="count-line">当前展示 <b id="count">10</b> 款</p>
+
+  <section class="grid" aria-label="游戏清单">
+
+    <article class="game-card" data-cat="puzzle">
+      <div class="card-head"><span class="idx">01</span><span class="tag tag-puzzle"><svg><use xlink:href="#i-puzzle"/></svg>益智解谜</span></div>
+      <h3>Block Blast!</h3>
+      <p>日本市场下载量榜首的方块消除游戏，规则简单但很耐玩。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+    <article class="game-card" data-cat="versus">
+      <div class="card-head"><span class="idx">02</span><span class="tag tag-versus"><svg><use xlink:href="#i-bolt"/></svg>休闲竞技</span></div>
+      <h3>贪吃蛇大作战</h3>
+      <p>经典贪吃蛇玩法，加入多人实时对战与加速突袭机制。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+    <article class="game-card" data-cat="puzzle">
+      <div class="card-head"><span class="idx">03</span><span class="tag tag-puzzle"><svg><use xlink:href="#i-puzzle"/></svg>益智消除</span></div>
+      <h3>羊了个羊</h3>
+      <p>现象级三消小游戏，以极高的第二关难度和社交分享闻名。</p>
+      <div class="platforms"><span class="platform">网页</span></div>
+    </article>
+
+    <article class="game-card" data-cat="story">
+      <div class="card-head"><span class="idx">04</span><span class="tag tag-story"><svg><use xlink:href="#i-chat"/></svg>文字模拟</span></div>
+      <h3>人生重开模拟器</h3>
+      <p>通过分配属性点体验随机的一生，充满互联网幽默与荒诞事件。</p>
+      <div class="platforms"><span class="platform">网页</span></div>
+    </article>
+
+    <article class="game-card" data-cat="shop">
+      <div class="card-head"><span class="idx">05</span><span class="tag tag-shop"><svg><use xlink:href="#i-shop"/></svg>模拟经营</span></div>
+      <h3>动物餐厅</h3>
+      <p>画风温馨的放置经营游戏，招待动物客人收集小鱼干来扩建餐厅。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+    <article class="game-card" data-cat="action">
+      <div class="card-head"><span class="idx">06</span><span class="tag tag-action"><svg><use xlink:href="#i-target"/></svg>动作射击</span></div>
+      <h3>元气骑士</h3>
+      <p>像素风地牢弹幕射击，武器与角色组合丰富，每局地牢随机生成。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+    <article class="game-card" data-cat="puzzle">
+      <div class="card-head"><span class="idx">07</span><span class="tag tag-puzzle"><svg><use xlink:href="#i-puzzle"/></svg>休闲解压</span></div>
+      <h3>合成大西瓜</h3>
+      <p>拖拽让相同水果合并，玩法简单直观，适合快速解压。</p>
+      <div class="platforms"><span class="platform">网页</span></div>
+    </article>
+
+    <article class="game-card" data-cat="story">
+      <div class="card-head"><span class="idx">08</span><span class="tag tag-story"><svg><use xlink:href="#i-chat"/></svg>文字生存</span></div>
+      <h3>赛博徒步：生死鳌太线</h3>
+      <p>基于真实事故改编的硬核生存游戏，需要在极限环境下做出决策。</p>
+      <div class="platforms"><span class="platform">网页</span></div>
+    </article>
+
+    <article class="game-card" data-cat="shop">
+      <div class="card-head"><span class="idx">09</span><span class="tag tag-shop"><svg><use xlink:href="#i-shop"/></svg>古风经营</span></div>
+      <h3>大店小二</h3>
+      <p>穿越到盛唐经营店铺，可以用现代理念研发火锅、肥皂等产品。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+    <article class="game-card" data-cat="versus">
+      <div class="card-head"><span class="idx">10</span><span class="tag tag-versus"><svg><use xlink:href="#i-bolt"/></svg>派对对战</span></div>
+      <h3>动物塔对战</h3>
+      <p>轮流堆放动物，谁先弄塌谁就输，规则极简但有物理玄学。</p>
+      <div class="platforms"><span class="platform">iOS</span><span class="platform">安卓</span></div>
+    </article>
+
+  </section>
+
+  <section class="tips">
+    <h2>选玩小贴士</h2>
+    <p class="tips-sub">按你的偏好对号入座，三组推荐各有侧重。</p>
+    <div class="tips-grid">
+      <article class="tip-card">
+        <div class="tip-why">偏爱策略与深度</div>
+        <h3>魔法迷域</h3>
+        <p>放置卡牌与 Roguelike 随机迷宫的融合，有元素克制与地形机制。</p>
+      </article>
+      <article class="tip-card">
+        <div class="tip-why">喜欢捉宠大世界</div>
+        <h3>伊莫</h3>
+        <p>2026 年 9 月刚上线的新作，与宠物「联结」获得飞行、潜水能力，移动端与 PC 数据互通。</p>
+      </article>
+      <article class="tip-card">
+        <div class="tip-why">追求纯粹的「摸鱼」</div>
+        <h3>见缝插针 / 开心跳一跳</h3>
+        <p>网页端即点即玩、无需下载，适合碎片时间随手来一局。</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">内容整理自 2026 年流行趋势盘点 · 平台标识：iOS / 安卓 / 网页</div>
+</footer>
+
+<script>
+  var chips = document.querySelectorAll('.chip-btn');
+  var cards = document.querySelectorAll('.game-card');
+  var countEl = document.getElementById('count');
+  chips.forEach(function(chip){
+    chip.addEventListener('click', function(){
+      chips.forEach(function(c){ c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+      chip.classList.add('active'); chip.setAttribute('aria-pressed','true');
+      var cat = chip.getAttribute('data-cat');
+      var n = 0;
+      cards.forEach(function(card){
+        var show = cat === 'all' || card.getAttribute('data-cat') === cat;
+        card.classList.toggle('hide', !show);
+        if (show) n++;
+      });
+      countEl.textContent = n;
+    });
+  });
+</script>
+</body>
+</html>

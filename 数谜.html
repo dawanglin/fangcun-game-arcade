@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数谜</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Cpath d='M6 12h5M13 12h5' stroke='%23f5b64c' stroke-width='2'/%3E%3Cpath d='M11 9l-2 3 2 3M15 9l-2 3 2 3' stroke='%2358d3e8' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(245,182,76,.10), transparent 60%)}
+  #app{width:min(94vw,440px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber);cursor:pointer}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--surface2);border-radius:12px;padding:10px}
+  .cell{aspect-ratio:1;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(18px,7vw,30px);font-weight:800;cursor:pointer}
+  .cell.sel{outline:2px solid var(--amber)}
+  .cell.err{color:var(--danger)!important;background:rgba(255,93,93,.22)!important}
+  .h{display:flex;align-items:center;justify-content:center;font-size:clamp(14px,5vw,22px);font-weight:800;color:var(--cyan)}
+  .v{display:flex;align-items:center;justify-content:center;font-size:clamp(14px,5vw,22px);font-weight:800;color:var(--cyan)}
+  .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .pad button{border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;
+    font-size:17px;font-weight:700;padding:11px;border-radius:10px;cursor:pointer}
+  .tools{display:flex;gap:8px;margin-top:10px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:6px;line-height:1.8}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:320px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}.overlay .sub{font-size:13.5px;color:var(--muted);margin:10px 0 16px}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>数谜</h1><p>不等号数谜 · 4×4</p></div>
+    <div class="score-box"><span class="k">新局</span><b id="newbtn">再来</b></div>
+  </header>
+  <div class="panel"><div class="grid" id="grid"></div></div>
+  <div class="panel">
+    <div class="pad" id="pad"></div>
+    <div class="tools"><button id="clear">清除</button><button id="check">检查</button><button id="new">新局</button></div>
+    <p class="tip">每行每列填 1-4 不重复，且满足格子之间的 &lt; 和 &gt; 不等号</p>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 style="color:#57c96b">全对！</h2><div class="sub">数谜完成</div><button class="btn" id="restart">再来一局</button></div></div>
+<script>
+(function(){
+  var N=4,sol,vals,ineq={},sel=-1;
+  function sh(a){for(var i=a.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[k];a[k]=t;}return a;}
+  function gen(){
+    var b=[[1,2,3,4],[2,3,4,1],[3,4,1,2],[4,1,2,3]];
+    var pr=sh([0,1,2,3]),pc=sh([0,1,2,3]);
+    sol=pr.map(function(i){return pc.map(function(c){return b[i][c];});});
+    ineq={};var keys=[];
+    for(var r=0;r<N;r++)for(var c=0;c<N-1;c++)keys.push('h_'+r+'_'+c);
+    for(var r2=0;r2<N-1;r2++)for(var c2=0;c2<N;c2++)keys.push('v_'+r2+'_'+c2);
+    sh(keys).slice(0,Math.floor(keys.length*0.6)).forEach(function(k){
+      var p=k.split('_');
+      if(p[0]==='h'){var rr=+p[1],cc=+p[2];ineq[k]=sol[rr][cc]<sol[rr][cc+1]?'<':'>';}
+      else{var rr2=+p[1],cc2=+p[2];ineq[k]=sol[rr2][cc2]<sol[rr2+1][cc2]?'<':'>';}
+    });
+    vals=[];for(var i=0;i<N*N;i++)vals.push(0);
+  }
+  function render(){
+    var el=document.getElementById('grid');el.innerHTML='';
+    for(var r=0;r<N;r++){
+      for(var c=0;c<N;c++){
+        var d=document.createElement('div');d.className='cell'+(r*N+c===sel?' sel':'');
+        d.textContent=vals[r*N+c]||'';
+        (function(rr,cc){d.addEventListener('click',function(){sel=rr*N+cc;render();});})(r,c);
+        el.appendChild(d);
+        if(c<N-1){
+          var s=document.createElement('div');s.className='h';
+          s.textContent=ineq['h_'+r+'_'+c]||'';
+          el.appendChild(s);
+        }
+      }
+      if(r<N-1){
+        for(var c2=0;c2<N;c2++){
+          var pad2=document.createElement('div');pad2.style.visibility='hidden';el.appendChild(pad2);
+          var s2=document.createElement('div');s2.className='v';
+          s2.textContent=ineq['v_'+r+'_'+c2]||'';
+          el.appendChild(s2);
+        }
+      }
+    }
+  }
+  function check(){
+    var err=false,full=true;
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+      var v=vals[r*N+c],e=document.querySelectorAll('#grid .cell')[r*N+c];
+      e.classList.remove('err');
+      if(!v){full=false;continue;}
+      for(var k=0;k<N;k++)if((k!==c&&vals[r*N+k]===v)||(k!==r&&vals[k*N+c]===v)){e.classList.add('err');err=true;}
+      if(c<N-1){var h=ineq['h_'+r+'_'+c];if(h&&((h==='<'&&!(v<vals[r*N+c+1]))||(h==='>'&&!(v>vals[r*N+c+1])))){e.classList.add('err');err=true;}}
+      if(r<N-1){var vv=ineq['v_'+r+'_'+c];if(vv&&((vv==='<'&&!(v<vals[(r+1)*N+c]))||(vv==='>'&&!(v>vals[(r+1)*N+c])))){e.classList.add('err');err=true;}}
+    }
+    if(full&&!err)document.getElementById('overlay').classList.add('show');
+  }
+  function fill(n){
+    if(sel<0)return;
+    vals[sel]=n;render();
+    if(n)check();
+  }
+  var pad=document.getElementById('pad');
+  for(var n=1;n<=4;n++){(function(v){var b=document.createElement('button');b.textContent=v;
+    b.addEventListener('click',function(){fill(v);});pad.appendChild(b);})(n);}
+  var eb=document.createElement('button');eb.textContent='×';eb.style.color='var(--danger)';
+  eb.addEventListener('click',function(){fill(0);});pad.appendChild(eb);
+  document.getElementById('clear').addEventListener('click',function(){fill(0);});
+  document.getElementById('check').addEventListener('click',check);
+  function reset(){gen();sel=-1;render();}
+  document.getElementById('new').addEventListener('click',reset);
+  document.getElementById('newbtn').addEventListener('click',reset);
+  document.getElementById('restart').addEventListener('click',function(){document.getElementById('overlay').classList.remove('show');reset();});
+  reset();
+})();
+</script>
+</body>
+</html>

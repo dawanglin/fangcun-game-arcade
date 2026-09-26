@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三个盒子 · 经典谜题收藏馆</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317322C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23F4EBDD' font-family='Georgia'%3E%3F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#2B2118;
+    --paper:#F4EBDD;
+    --paper2:#E9DEC9;
+    --bg:#17322C;
+    --bg2:#1F3D35;
+    --accent:#C8502E;
+    --gold:#D9A441;
+    --line:#C9BCA4;
+    --ok:#3E7C59;
+    --apple:#C8502E;
+    --orange:#E08A2E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1000px 520px at 88% -8%, rgba(216,164,65,.13), transparent 60%),
+      var(--bg);
+    color:var(--paper);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px}
+
+  /* ===== 顶栏 ===== */
+  .topbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid rgba(244,235,221,.16);
+  }
+  a.back{
+    color:var(--gold);text-decoration:none;font-size:14px;
+    border:1px solid rgba(217,164,65,.4);border-radius:999px;
+    padding:6px 14px;transition:background .15s;
+  }
+  a.back:hover{background:rgba(217,164,65,.14)}
+  h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:24px;font-weight:700;letter-spacing:.04em}
+  .tabs{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .tabs button{
+    font-family:inherit;font-size:14px;color:var(--paper);
+    background:transparent;border:1px solid rgba(244,235,221,.3);
+    border-radius:999px;padding:7px 16px;cursor:pointer;transition:all .15s;
+  }
+  .tabs button.active{background:var(--gold);border-color:var(--gold);color:var(--bg);font-weight:700}
+  .tabs button:hover{background:rgba(217,164,65,.18)}
+
+  /* ===== 面板 ===== */
+  .panel{display:none;margin-top:24px}
+  .panel.show{display:block;animation:fade .25s}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card-box{
+    background:var(--paper);color:var(--ink);
+    border-radius:20px;padding:20px;box-shadow:0 14px 30px rgba(0,0,0,.28);
+  }
+  .lead{font-size:14px;color:#5b4f3e;line-height:1.75}
+  .lead b{color:var(--accent)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+  .grow{flex:1;min-width:220px}
+
+  /* ===== 盒子 ===== */
+  .boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .box{
+    border:1px solid var(--line);border-radius:16px;background:var(--paper2);
+    padding:16px 10px 14px;text-align:center;cursor:pointer;
+    transition:transform .15s, box-shadow .15s, opacity .2s;
+    position:relative;
+  }
+  .box:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(43,33,24,.15)}
+  .box.disabled{cursor:default;opacity:.55;pointer-events:none}
+  .box.opened{outline:3px solid var(--gold)}
+  .box .boxpic{height:74px;display:flex;align-items:flex-end;justify-content:center}
+  .box .tag{
+    display:inline-block;margin-top:10px;font-size:13px;font-weight:700;
+    background:var(--bg);color:var(--paper);border-radius:999px;padding:3px 14px;
+  }
+  .fruit-pop{
+    position:absolute;top:-26px;left:50%;transform:translateX(-50%);
+    width:52px;height:52px;animation:popUp .4s cubic-bezier(.3,1.5,.5,1);
+  }
+  @keyframes popUp{from{transform:translateX(-50%) scale(0);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+
+  /* ===== 推理区 ===== */
+  .reason{margin-top:20px;display:none}
+  .reason.show{display:block}
+  .reason .subtitle{font-weight:700;font-size:15px;margin-bottom:10px}
+  .guess-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .guess-item{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:var(--paper2)}
+  .guess-item .q{font-size:13px;color:#5b4f3e;margin-bottom:8px}
+  .guess-item .q b{color:var(--ink)}
+  .opts{display:flex;flex-direction:column;gap:6px}
+  .opts button{
+    font-family:inherit;font-size:13px;border:1px solid var(--line);
+    background:var(--paper);border-radius:9px;padding:6px 4px;cursor:pointer;color:var(--ink);
+  }
+  .opts button:hover{border-color:var(--gold)}
+  .opts button.sel{background:var(--bg);color:var(--paper);border-color:var(--bg);font-weight:700}
+  .verdict{
+    margin-top:16px;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.8;
+    background:rgba(62,124,89,.12);border:1px solid var(--ok);display:none;
+  }
+  .verdict.show{display:block}
+  .verdict.bad{background:rgba(200,80,46,.12);border-color:var(--accent)}
+  .verdict b{font-weight:700}
+  .btn-row{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+  button.action{
+    font-family:inherit;font-size:14px;font-weight:700;color:#fff;
+    background:var(--accent);border:1px solid var(--accent);
+    border-radius:10px;padding:8px 18px;cursor:pointer;
+  }
+  button.action:hover{filter:brightness(1.08)}
+  button.action.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  button.action:disabled{opacity:.45;cursor:not-allowed}
+
+  /* ===== 蒙提霍尔 ===== */
+  .monty-info{font-size:14px;color:#5b4f3e;line-height:1.75}
+  .doors{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  .door{
+    position:relative;aspect-ratio:3/4.2;cursor:pointer;
+    border:none;padding:0;border-radius:10px;overflow:hidden;
+    transition:transform .15s, box-shadow .15s;
+    background:transparent;
+  }
+  .door:hover{transform:translateY(-3px)}
+  .door .body{
+    position:absolute;inset:0;border-radius:10px;
+    background:linear-gradient(180deg,#B08B5E,#8A6F4B);
+    border:1px solid #6d5636;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .45s cubic-bezier(.5,0,.6,1);
+  }
+  .door .body .num{font-size:30px;font-weight:900;color:rgba(244,235,221,.9);font-family:"Noto Serif SC",serif}
+  .door .knob{
+    position:absolute;right:12%;top:52%;width:12px;height:12px;border-radius:50%;
+    background:var(--gold);box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .door.open .body{transform:perspective(700px) rotateY(-72deg);transform-origin:left center}
+  .door.chosen .body{outline:4px solid var(--gold);outline-offset:3px}
+  .door.revealed{pointer-events:none}
+  .door .inner{
+    position:absolute;inset:0;background:#3d3022;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .door .inner .prize{width:64%;opacity:0;transition:opacity .3s .35s}
+  .door.show-prize .inner .prize{opacity:1}
+  .monty-ctl{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .monty-ctl button.action{background:var(--bg);border-color:var(--bg)}
+  .monty-ctl button.action.primary{background:var(--accent);border-color:var(--accent)}
+  .monty-ctl button.action:disabled{opacity:.4;cursor:not-allowed}
+  .stats{
+    margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  }
+  .stat{
+    background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+  }
+  .stat .k{font-size:13px;color:#6b5f4e}
+  .stat .v{font-size:26px;font-weight:900;font-family:"Noto Serif SC",serif}
+  .stat .v small{font-size:14px;color:#6b5f4e;font-weight:500}
+  .bar{height:8px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;background:var(--accent);width:0;transition:width .4s}
+  .stat.green .bar i{background:var(--ok)}
+  .monty-note{margin-top:14px;font-size:13px;color:#5b4f3e;line-height:1.8}
+  .monty-note b{color:var(--accent)}
+
+  @media (max-width:720px){
+    .boxes{grid-template-columns:1fr}
+    .guess-grid{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="经典谜题.html">← 返回大厅</a>
+    <h1>三个盒子</h1>
+    <div class="tabs">
+      <button id="tabPuzzle" class="active">贴错的标签</button>
+      <button id="tabMonty">蒙提霍尔</button>
+    </div>
+  </div>
+
+  <!-- ===== 模式一：贴错的标签 ===== -->
+  <div class="panel show" id="panelPuzzle">
+    <div class="card-box">
+      <p class="lead">三个盒子分别贴着「苹果」「橙子」「混合」的标签，<b>但三个标签全部贴错了</b>。混合盒里装着苹果和橙子各半。你只能从<b>一个</b>盒子里摸出<b>一个</b>水果（不再放回，也不能再摸），然后推出三个盒子的真实内容。</p>
+      <div class="boxes" id="boxes"></div>
+      <div class="reason" id="reason">
+        <div class="subtitle">现在推理：每个盒子里实际装的是什么？</div>
+        <div class="guess-grid" id="guessGrid"></div>
+        <div class="btn-row">
+          <button class="action" id="submitGuess">提交答案</button>
+          <button class="action ghost" id="restartPuzzle" style="display:none">再来一局</button>
+        </div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </div>
+
+  <!-- ===== 模式二：蒙提霍尔 ===== -->
+  <div class="panel" id="panelMonty">
+    <div class="card-box">
+      <p class="monty-info">三扇门里只有一扇后有奖。你先选一扇，主持人（知道奖在哪）会打开一扇<b>空的</b>门，然后问你要不要换到剩下那扇门。<b>换，还是不换？</b>连玩几局，看看两种选择的胜率。</p>
+      <div class="doors" id="doors"></div>
+      <div class="monty-ctl">
+        <button class="action primary" id="simulateBtn">模拟 1 万局算胜率</button>
+        <button class="action" id="resetMontyBtn">清空统计</button>
+        <span style="font-size:13px;color:#6b5f4e" id="montyPhase">请选择一扇门</span>
+      </div>
+      <div class="stats">
+        <div class="stat green">
+          <div class="k">换门 · 胜率（共 <span id="swN">0</span> 局）</div>
+          <div class="v" id="swRate">—<small></small></div>
+          <div class="bar"><i id="swBar"></i></div>
+        </div>
+        <div class="stat">
+          <div class="k">坚持 · 胜率（共 <span id="stN">0</span> 局）</div>
+          <div class="v" id="stRate">—<small></small></div>
+          <div class="bar"><i id="stBar"></i></div>
+        </div>
+      </div>
+      <p class="monty-note" id="montyNote">提示：换门胜率约 2/3，坚持约 1/3。选门时胜率只有 1/3，主持人帮你排除了一个错误答案后，剩下那扇门把 2/3 的概率都揽在了自己身上。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var BOX_SVG = '<svg viewBox="0 0 96 96" width="70" height="70"><path d="M10 34 L48 20 L86 34 L48 48 z" fill="#C9A066"/><path d="M10 34 L48 48 L48 78 L10 64 z" fill="#B08B5E"/><path d="M86 34 L48 48 L48 78 L86 64 z" fill="#A07E52"/></svg>';
+  var APPLE_SVG = '<svg viewBox="0 0 64 64" width="52" height="52"><circle cx="32" cy="38" r="20" fill="#C8502E"/><path d="M32 20q4-10 14-10q-2 9-14 10z" fill="#3E7C59"/><path d="M32 20q-4-8-2-11l4 1" stroke="#6B4A2F" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+  var ORANGE_SVG = '<svg viewBox="0 0 64 64" width="52" height="52"><circle cx="32" cy="40" r="19" fill="#E08A2E"/><circle cx="26" cy="34" r="6" fill="rgba(255,255,255,.18)"/><path d="M32 22q0-8 6-11" stroke="#6B4A2F" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+  var PRIZE_SVG = '<svg viewBox="0 0 64 64" width="52" height="52"><circle cx="32" cy="34" r="16" fill="#D9A441" stroke="#A07E30" stroke-width="2"/><circle cx="28" cy="30" r="4" fill="rgba(255,255,255,.4)"/><path d="M24 56h16l-2 6H26z" fill="#C8502E"/></svg>';
+  var EMPTY_SVG = '<svg viewBox="0 0 64 64" width="52" height="52"><text x="32" y="44" text-anchor="middle" font-size="30" font-weight="700" fill="#8a7c66" font-family="Noto Serif SC,serif">空</text></svg>';
+
+  var LABELS = ['苹果','橙子','混合'];
+  var FRUITS = ['苹果','橙子'];
+
+  /* ================= 模式一：贴错的标签 ================= */
+  var puzzle = { actual:null, opened:null, drawn:null, guesses:{} };
+
+  function newPuzzle(){
+    puzzle.actual = shuffle(LABELS.slice());
+    while (LABELS.some(function(l,i){ return l === puzzle.actual[i]; })){
+      puzzle.actual = shuffle(LABELS.slice());
+    }
+    puzzle.opened = null;
+    puzzle.drawn = null;
+    puzzle.guesses = {};
+    document.getElementById('verdict').className = 'verdict';
+    document.getElementById('verdict').innerHTML = '';
+    var reason = document.getElementById('reason');
+    reason.classList.remove('show');
+    document.getElementById('submitGuess').style.display = '';
+    document.getElementById('restartPuzzle').style.display = 'none';
+    renderBoxes();
+  }
+
+  function renderBoxes(){
+    var wrap = document.getElementById('boxes');
+    wrap.innerHTML = '';
+    for (var i=0;i<3;i++){
+      var el = document.createElement('div');
+      el.className = 'box' + (puzzle.opened===null ? '' : ' disabled');
+      var fruitHtml = puzzle.opened===i && puzzle.drawn
+        ? '<div class="fruit-pop">' + (puzzle.drawn==='苹果'?APPLE_SVG:ORANGE_SVG) + '</div>' : '';
+      el.innerHTML = '<div class="boxpic">' + BOX_SVG + '</div>' +
+                     '<div class="tag">' + LABELS[i] + '</div>' + fruitHtml;
+      if (puzzle.opened===null){
+        el.addEventListener('click', function(j){
+          return function(){ drawFrom(j); };
+        }(i));
+      }
+      wrap.appendChild(el);
+    }
+  }
+
+  function drawFrom(i){
+    puzzle.opened = i;
+    // 从该盒实际内容中摸一个水果（混合盒随机）
+    var actual = puzzle.actual[i];
+    puzzle.drawn = actual === '混合' ? FRUITS[Math.floor(Math.random()*2)] : actual;
+    renderBoxes();
+    buildReason();
+  }
+
+  function buildReason(){
+    var reason = document.getElementById('reason');
+    reason.classList.add('show');
+    var grid = document.getElementById('guessGrid');
+    grid.innerHTML = '';
+    for (var i=0;i<3;i++){
+      var item = document.createElement('div');
+      item.className = 'guess-item';
+      var opts = '<div class="opts">';
+      LABELS.forEach(function(l){
+        opts += '<button data-i="' + i + '" data-v="' + l + '">' + l + '</button>';
+      });
+      opts += '</div>';
+      item.innerHTML = '<div class="q">标着「<b>' + LABELS[i] + '</b>」的盒子实际是？</div>' + opts;
+      grid.appendChild(item);
+    }
+    grid.querySelectorAll('.opts button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        grid.querySelectorAll('.opts button[data-i="'+btn.getAttribute('data-i')+'"]').forEach(function(b){ b.classList.remove('sel'); });
+        btn.classList.add('sel');
+        puzzle.guesses[btn.getAttribute('data-i')] = btn.getAttribute('data-v');
+      });
+    });
+  }
+
+  document.getElementById('submitGuess').addEventListener('click', function(){
+    if (Object.keys(puzzle.guesses).length < 3){
+      showVerdict('先把三盒都填上再提交。', true);
+      return;
+    }
+    var right = true;
+    for (var i=0;i<3;i++){
+      if (puzzle.guesses[i] !== puzzle.actual[i]) { right = false; break; }
+    }
+    var verdict = document.getElementById('verdict');
+    if (right){
+      localStorage.setItem('puzzle-best-boxes', bumpScore(true));
+      showVerdict('全对！你识破了所有贴错的标签。' + explain(), false);
+    } else {
+      localStorage.setItem('puzzle-best-boxes', bumpScore(false));
+      showVerdict('不对——真相是：苹果盒 = ' + puzzle.actual[0] + '，橙子盒 = ' + puzzle.actual[1] + '，混合盒 = ' + puzzle.actual[2] + '。' + explain(), true);
+    }
+    document.getElementById('submitGuess').style.display = 'none';
+    document.getElementById('restartPuzzle').style.display = '';
+    document.getElementById('reason').classList.remove('show');
+  });
+
+  function showVerdict(html, bad){
+    var v = document.getElementById('verdict');
+    v.className = 'verdict show' + (bad?' bad':'');
+    v.innerHTML = html;
+  }
+
+  // 通关记录：格式 "胜/总"
+  function bumpScore(win){
+    var raw = localStorage.getItem('puzzle-best-boxes');
+    var t = raw ? raw.split('/') : [0,0];
+    var w = +t[0]||0, n = +t[1]||0;
+    if (win) w++;
+    n++;
+    return w + '/' + n;
+  }
+
+  function explain(){
+    if (puzzle.opened === 2){
+      var f = puzzle.drawn;
+      var other = f==='苹果' ? '橙子' : '苹果';
+      return '你从「混合」盒摸出了<b>' + f + '</b>：混合盒实际就是 ' + f + ' 盒；标「' + f + '」的盒子不可能是混合（否则标「' + other + '」的盒子就得是 ' + other + '，标签就没贴错），所以它只能是 ' + other + ' 盒；剩下标「' + other + '」的盒子是混合盒。全解。';
+    }
+    return '但要注意：从标「' + LABELS[puzzle.opened] + '」的盒子摸，推理并不唯一——只有从「混合」盒摸一个水果，才能一举确定全部三盒。';
+  }
+
+  document.getElementById('restartPuzzle').addEventListener('click', newPuzzle);
+
+  /* ================= 模式二：蒙提霍尔 ================= */
+  var monty = { prize:-1, chosen:-1, opened:-1, phase:'pick', stats:{sw:0,swL:0,st:0,stL:0} };
+
+  function montyInit(){
+    monty.prize = Math.floor(Math.random()*3);
+    monty.chosen = -1;
+    monty.opened = -1;
+    monty.phase = 'pick';
+    document.getElementById('montyPhase').textContent = '请选择一扇门';
+    renderDoors();
+    setMontyCtl(true, false);
+  }
+
+  function renderDoors(){
+    var wrap = document.getElementById('doors');
+    wrap.innerHTML = '';
+    for (var i=0;i<3;i++){
+      var el = document.createElement('div');
+      var open = monty.opened===i || monty.phase==='end';
+      var showPrize = monty.phase==='end' && monty.prize===i;
+      el.className = 'door' + (monty.chosen===i?' chosen':'') + (open?' open':'') + (showPrize?' show-prize':'') + (monty.phase!=='pick'?' revealed':'');
+      el.innerHTML = '<div class="inner"><div class="prize">' + (monty.prize===i?PRIZE_SVG:EMPTY_SVG) + '</div></div>' +
+                     '<div class="body"><span class="num">' + (i+1) + '</span><span class="knob"></span></div>';
+      if (monty.phase==='pick' || monty.phase==='end'){
+        el.addEventListener('click', function(j){
+          return function(){ monty.phase==='pick' ? montyPick(j) : montyInit(); };
+        }(i));
+      }
+      wrap.appendChild(el);
+    }
+  }
+
+  function montyPick(i){
+    monty.chosen = i;
+    monty.phase = 'offer';
+    // 主持人开一扇空门（不能是玩家选的、不能是奖）
+    var options = [0,1,2].filter(function(d){ return d!==i && d!==monty.prize; });
+    monty.opened = options[Math.floor(Math.random()*options.length)];
+    renderDoors();
+    document.getElementById('montyPhase').textContent = '主持人打开了 ' + (monty.opened+1) + ' 号门（空的）。要换吗？';
+    setMontyCtl(true, true);
+  }
+
+  function montyFinish(swap){
+    var i = swap ? [0,1,2].filter(function(d){ return d!==monty.chosen && d!==monty.opened; })[0] : monty.chosen;
+    var win = i === monty.prize;
+    if (swap){ monty.stats.sw += win?1:0; monty.stats.swL += win?0:1; }
+    else     { monty.stats.st += win?1:0; monty.stats.stL += win?0:1; }
+    monty.phase = 'end';
+    renderDoors();
+    updateStats();
+    document.getElementById('montyPhase').textContent = (swap?'换门':'坚持') + (win?'，赢了！':'，没中。再来一局试试？');
+    setMontyCtl(false, false);
+  }
+
+  function updateStats(){
+    var swN = monty.stats.sw + monty.stats.swL;
+    var stN = monty.stats.st + monty.stats.stL;
+    document.getElementById('swN').textContent = swN;
+    document.getElementById('stN').textContent = stN;
+    var swR = swN ? Math.round(100*monty.stats.sw/swN) : 0;
+    var stR = stN ? Math.round(100*monty.stats.st/stN) : 0;
+    document.getElementById('swRate').innerHTML = swN ? swR + '%<small> · ' + monty.stats.sw + ' 胜</small>' : '—<small></small>';
+    document.getElementById('stRate').innerHTML = stN ? stR + '%<small> · ' + monty.stats.st + ' 胜</small>' : '—<small></small>';
+    document.getElementById('swBar').style.width = swR + '%';
+    document.getElementById('stBar').style.width = stR + '%';
+  }
+
+  function setMontyCtl(pickable, offer){
+    document.querySelectorAll('#montyCtlBtn').forEach(function(b){ b.remove(); });
+    var ctl = document.querySelector('.monty-ctl');
+    [document.getElementById('simulateBtn'), document.getElementById('resetMontyBtn')].forEach(function(b){
+      if (b) b.disabled = false;
+    });
+    if (offer){
+      var stay = document.createElement('button');
+      stay.className = 'action'; stay.id = 'montyCtlBtn'; stay.textContent = '坚持不换';
+      stay.addEventListener('click', function(){ montyFinish(false); });
+      var sw = document.createElement('button');
+      sw.className = 'action primary'; sw.id = 'montyCtlBtn'; sw.textContent = '换到另一扇';
+      sw.addEventListener('click', function(){ montyFinish(true); });
+      var phase = document.getElementById('montyPhase');
+      ctl.insertBefore(sw, phase);
+      ctl.insertBefore(stay, sw);
+    }
+  }
+
+  document.getElementById('simulateBtn').addEventListener('click', function(){
+    var N = 10000, swW = 0, stW = 0;
+    for (var g=0; g<N; g++){
+      var prize = Math.floor(Math.random()*3);
+      var pick = Math.floor(Math.random()*3);
+      if (pick === prize) stW++; else swW++;
+    }
+    document.getElementById('swN').textContent = N;
+    document.getElementById('stN').textContent = N;
+    document.getElementById('swRate').innerHTML = Math.round(100*swW/N) + '%<small> · ' + swW + ' 胜</small>';
+    document.getElementById('stRate').innerHTML = Math.round(100*stW/N) + '%<small> · ' + stW + ' 胜</small>';
+    document.getElementById('swBar').style.width = Math.round(100*swW/N) + '%';
+    document.getElementById('stBar').style.width = Math.round(100*stW/N) + '%';
+    document.getElementById('montyNote').innerHTML = '<b>模拟结果（1 万局）：</b>换门胜率 ≈ 2/3，坚持胜率 ≈ 1/3。第一次选门时只有 1/3 的概率选中奖，主持人排除了一个空门后，剩下那扇门揽下了全部 2/3 的概率——所以换。';
+  });
+  document.getElementById('resetMontyBtn').addEventListener('click', function(){
+    monty.stats = {sw:0,swL:0,st:0,stL:0};
+    updateStats();
+    montyInit();
+  });
+
+  /* ===== 选项卡切换 ===== */
+  function switchTab(which){
+    document.getElementById('tabPuzzle').classList.toggle('active', which==='puzzle');
+    document.getElementById('tabMonty').classList.toggle('active', which==='monty');
+    document.getElementById('panelPuzzle').classList.toggle('show', which==='puzzle');
+    document.getElementById('panelMonty').classList.toggle('show', which==='monty');
+  }
+  document.getElementById('tabPuzzle').addEventListener('click', function(){ switchTab('puzzle'); });
+  document.getElementById('tabMonty').addEventListener('click', function(){ switchTab('monty'); });
+
+  function shuffle(a){
+    for (var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  newPuzzle();
+  montyInit();
+})();
+</script>
+</body>
+</html>

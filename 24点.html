@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>24点 · 经典逻辑游戏馆</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='2' width='28' height='28' rx='6' fill='%23f0a93e'/><rect x='8' y='8' width='7' height='7' fill='%2310131c'/><rect x='17' y='8' width='7' height='7' fill='%2310131c'/><rect x='8' y='17' width='7' height='7' fill='%2310131c'/><rect x='17' y='17' width='7' height='7' fill='%2310131c'/></svg>">
+<style>
+
+:root{
+  --bg:#10131c; --panel:#191d2a; --panel2:#212638; --line:#2b3150;
+  --ink:#e9ecf6; --sub:#9aa3bf; --dim:#67708f;
+  --gold:#f0a93e; --teal:#41c7ae; --red:#e5534b; --blue:#6b93ff; --ok:#58c96b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,sans-serif;line-height:1.5;min-height:100vh;
+  background-image:radial-gradient(1200px 600px at 70% -10%,rgba(65,199,174,.06),transparent),radial-gradient(900px 500px at 10% 0%,rgba(240,169,62,.05),transparent)}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+/* ===== header & tabs ===== */
+.top{text-align:center;padding:26px 0 6px}
+.top h1{font-size:30px;font-weight:800;letter-spacing:2px}
+.top h1 em{font-style:normal;color:var(--gold)}
+.top .sub{color:var(--sub);margin-top:6px;font-size:14px}
+.tabs{display:flex;justify-content:center;gap:14px;margin:26px 0 30px}
+.tab{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);color:var(--sub);
+  padding:11px 26px;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;transition:.18s;font-family:inherit}
+.tab:hover{color:var(--ink);border-color:#3a4268}
+.tab.active{background:var(--panel2);color:var(--ink);box-shadow:0 0 0 1px inset}
+.tab .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tab.active .dot{box-shadow:0 0 10px var(--c)}
+/* ===== game cards ===== */
+.cat-group{display:flex;flex-direction:column;gap:22px}
+.hidden{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  border-left:4px solid var(--c);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.chead{display:flex;align-items:center;gap:10px;padding:16px 20px 0}
+.chead h2{font-size:19px;font-weight:700}
+.ic{width:22px;height:22px;color:var(--c);flex:none}
+.chead .badge{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.rule{color:var(--sub);font-size:13px;padding:6px 20px 0}
+.body{display:grid;grid-template-columns:1fr 230px;gap:16px;padding:16px 20px 14px}
+.ctrl{display:flex;flex-direction:column;gap:9px;justify-content:flex-start}
+.board{min-width:0;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.status{color:var(--sub);font-size:13px;padding:0 20px 16px;min-height:20px}
+.status b{color:var(--ink);font-weight:600}
+.status .win{color:var(--ok)} .status .lose{color:var(--red)} .status .warn{color:var(--gold)}
+/* ===== buttons & inputs ===== */
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:9px 14px;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:hover{border-color:#414b7a;background:#262c44}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--c);border-color:var(--c);color:#14161f;font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);background:var(--c)}
+.btn.ghost{background:transparent;color:var(--sub)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+input[type=text],input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 12px;font-size:14px;outline:none;font-family:inherit}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--c)}
+input[type=number]{width:88px}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.meter{display:flex;gap:14px;color:var(--sub);font-size:13px}
+.meter b{color:var(--ink)}
+/* ===== common board bits ===== */
+.cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:6px;font-size:15px;font-weight:600;user-select:none}
+.card4{display:flex;gap:10px;flex-wrap:wrap}
+.card4 .pk{width:76px;height:104px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:800;background:linear-gradient(160deg,#f6f8fd,#dfe4f0);color:#232a45;
+  box-shadow:0 6px 14px rgba(0,0,0,.35);border:1px solid #c9d0e2}
+.expr{width:min(420px,100%);font-size:17px;letter-spacing:1px}
+.pad{display:flex;flex-wrap:wrap;gap:7px;max-width:420px}
+.pad button{min-width:44px;padding:7px 0;font-size:16px}
+/* Nim */
+.piles{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+.pile{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pile .stones{display:flex;flex-wrap:wrap;gap:5px;width:92px;justify-content:center;min-height:96px;padding:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.stone{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f7c46b,#c97f18);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.pile .pn{font-size:13px;color:var(--sub);font-weight:600}
+.pile.sel .stones{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,169,62,.35)}
+.pile.sel .pn{color:var(--gold)}
+/* slide puzzle */
+.slideboard{display:grid;gap:6px;background:var(--panel2);border:1px solid var(--line);padding:8px;border-radius:12px}
+.tile{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2b3354,#232a45);
+  border-radius:8px;font-size:22px;font-weight:800;color:#cdd6f5;cursor:pointer;user-select:none;box-shadow:0 3px 8px rgba(0,0,0,.3);transition:background .12s}
+.tile:hover{background:#313a61}
+.tile.blank{background:transparent;box-shadow:none;cursor:default}
+/* jugs */
+.jugs{display:flex;gap:34px;align-items:flex-end;flex-wrap:wrap}
+.jug{display:flex;flex-direction:column;align-items:center;gap:8px}
+.jar{width:74px;height:150px;border:3px solid var(--line);border-top:none;border-radius:0 0 10px 10px;position:relative;background:rgba(20,26,44,.5);overflow:hidden}
+.jar .water{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(65,199,174,.75),rgba(65,199,174,.5));transition:height .3s}
+.jar .cap{position:absolute;top:0;left:-8px;right:-8px;height:6px;background:var(--line);border-radius:3px}
+.jug .capv{font-size:12px;color:var(--sub)} .jug .name{font-size:13px;font-weight:700}
+.goalbar{margin-top:4px;font-size:13px;color:var(--sub)}
+.goalbar b{color:var(--teal)}
+/* bridges */
+.brsvg{width:100%;max-width:640px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* slitherlink */
+.lpsvg{width:100%;max-width:560px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;touch-action:manipulation}
+/* minesweeper */
+.minegrid{display:grid;gap:3px;background:var(--panel2);border:1px solid var(--line);padding:7px;border-radius:10px;user-select:none}
+.mcell{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:#2a3150;
+  border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+.mcell.rev{background:#1d2339;cursor:default}
+.mcell.mine-hit{background:var(--red)}
+.mcell.flag{background:#26304d}
+.mcell.f1{color:#7fd0ff}.mcell.f2{color:#58c96b}.mcell.f3{color:#f0a93e}.mcell.f4{color:#6b93ff}.mcell.f5{color:#e07a5f}.mcell.f6{color:#41c7ae}.mcell.f7{color:#f0a93e}.mcell.f8{color:#e5534b}
+/* maze */
+.mzcanvas{width:100%;max-width:600px;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;display:block;touch-action:none}
+.toggle{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--c)}
+/* toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#262c44;border:1px solid #414b7a;
+  color:var(--ink);padding:10px 20px;border-radius:10px;font-size:14px;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;top:28px}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:44px}
+@media (max-width:760px){
+  .body{grid-template-columns:1fr}
+  .ctrl{flex-direction:row;flex-wrap:wrap}
+  .top h1{font-size:24px}
+  .tabs{gap:8px}
+  .tab{padding:9px 16px;font-size:13px}
+  .cell{width:30px;height:30px;font-size:14px}
+  .mcell{width:26px;height:26px}
+}
+
+.back{color:var(--teal);text-decoration:none;font-weight:600}
+.back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>24点</h1>
+  <p class="sub">经典逻辑游戏馆 · <a class="back" href="经典逻辑游戏合集.html">返回游戏馆</a></p>
+</header>
+<main>
+<article class="card" style="--c:var(--gold)">
+    <div class="chead">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+      <h2>24 点</h2><span class="badge">算术</span>
+    </div>
+    <p class="rule">四张牌上的数字各用一次，通过 + − × ÷ 与括号算出 24。</p>
+    <div class="body">
+      <div class="board">
+        <div id="g24cards" class="card4"></div>
+        <input id="g24expr" class="expr" type="text" placeholder="输入算式，如 6/(1-3/4)" autocomplete="off">
+        <div id="g24pad" class="pad"></div>
+      </div>
+      <div class="ctrl">
+        <button class="btn primary" id="g24check">验证</button>
+        <button class="btn" id="g24hint">提示</button>
+        <button class="btn" id="g24new">换题</button>
+      </div>
+    </div>
+    <div class="status" id="g24status">点击「换题」开始。答对累计连击。</div>
+  </article>
+</main>
+<footer>经典逻辑游戏馆 · 本地运行无需联网</footer>
+</div>
+<script>
+"use strict";
+/* ================= 共享工具 ================= */
+const $=id=>document.getElementById(id);
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e;};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function toast(msg){let t=$('toastBox');if(!t){t=el('div');t.id='toastBox';t.className='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+/* 有理数运算（避免浮点误差，用于 24 点） */
+function F(n,d){this.n=n;this.d=d||1;this.simp();}
+F.prototype.simp=function(){const g=gcd(Math.abs(this.n),Math.abs(this.d));this.n/=g;this.d/=g;if(this.d<0){this.n=-this.n;this.d=-this.d;}return this;};
+F.prototype.add=function(o){return new F(this.n*o.d+o.n*this.d,this.d*o.d);};
+F.prototype.sub=function(o){return new F(this.n*o.d-o.n*this.d,this.d*o.d);};
+F.prototype.mul=function(o){return new F(this.n*o.n,this.d*o.d);};
+F.prototype.div=function(o){return o.n===0?null:new F(this.n*o.d,this.d*o.n);};
+F.prototype.eq=function(o){return this.n===o.n&&this.d===o.d;};
+/* 表达式求值（中缀 → RPN → 有理数） */
+function tokExpr(s){
+  const t=[];let i=0;s=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/＋/g,'+').replace(/[（）]/g,c=>c==='（'?'(':')');
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(/[0-9]/.test(c)){let j=i;while(j<s.length&&/[0-9]/.test(s[j]))j++;t.push({k:'n',v:parseInt(s.slice(i,j),10)});i=j;continue;}
+    if('+-*/()'.includes(c)){t.push({k:c});i++;continue;}
+    return null;
+  }
+  return t;
+}
+function evalExpr(s){
+  const t=tokExpr(s);if(!t||t.length===0)return null;
+  const out=[],op=[];const prec={'+':1,'-':1,'*':2,'/':2};
+  for(const x of t){
+    if(x.k==='n')out.push(x.v);
+    else if(x.k==='(')op.push(x.k);
+    else if(x.k===')'){
+      while(op.length&&op[op.length-1]!=='('){out.push(op.pop());}
+      if(!op.length)return null;op.pop();
+    }else{
+      while(op.length&&op[op.length-1]!=='('&&prec[op[op.length-1]]>=prec[x.k])out.push(op.pop());
+      op.push(x.k);
+    }
+  }
+  while(op.length){if(op[op.length-1]==='(')return null;out.push(op.pop());}
+  const st=[];
+  for(const x of out){
+    if(typeof x==='number')st.push(new F(x,1));
+    else{
+      const b=st.pop(),a=st.pop();if(a===undefined||b===undefined)return null;
+      let r=x==='+'?a.add(b):x==='-'?a.sub(b):x==='*'?a.mul(b):a.div(b);
+      if(!r)return null;st.push(r);
+    }
+  }
+  return st.length===1?st[0]:null;
+}
+
+
+const G24={nums:[],sols:[],streak:0,score:0};
+function g24Solve(sub){
+  if(sub.length===1)return[{f:new F(sub[0],1),e:String(sub[0])}];
+  const res=[];
+  for(let mask=1;mask<(1<<sub.length)-1;mask++){
+    const L=[],R=[];
+    for(let i=0;i<sub.length;i++)(mask&(1<<i))?L.push(sub[i]):R.push(sub[i]);
+    if(L.length>R.length)continue;
+    const ls=g24Solve(L),rs=g24Solve(R);
+    for(const l of ls)for(const r of rs){
+      const ops=[
+        {f:l.f.add(r.f),e:'('+l.e+'+'+r.e+')'},
+        {f:l.f.sub(r.f),e:'('+l.e+'-'+r.e+')'},
+        {f:l.f.mul(r.f),e:'('+l.e+'*'+r.e+')'},
+        {f:r.f.sub(l.f),e:'('+r.e+'-'+l.e+')'},
+        {f:l.f.div(r.f),e:'('+l.e+'/'+r.e+')'},
+        {f:r.f.div(l.f),e:'('+r.e+'/'+l.e+')'}
+      ];
+      for(const o of ops)if(o.f&&!res.some(x=>x.e===o.e))res.push(o);
+    }
+  }
+  return res;
+}
+function g24New(){
+  let tries=0,nums,sols;
+  do{nums=[rnd(1,13),rnd(1,13),rnd(1,13),rnd(1,13)];sols=g24Solve(nums.slice().sort((a,b)=>a-b));tries++;}
+  while(!sols.length&&tries<300);
+  if(!sols.length){nums=[3,3,8,8];sols=g24Solve([3,3,8,8]);}
+  G24.nums=nums.slice();G24.sols=sols;
+  $('g24cards').innerHTML='';
+  nums.forEach(n=>$('g24cards').appendChild(el('div','pk',n)));
+  const pad=$('g24pad');pad.innerHTML='';
+  const keys=[];
+  nums.forEach((n,i)=>keys.push({t:String(n),c:'num'}));
+  keys.push({t:'+',c:'op'},{t:'−',c:'op'},{t:'×',c:'op'},{t:'÷',c:'op'},{t:'(',c:'op'},{t:')',c:'op'},{t:'⌫',c:'fn'},{t:'清空',c:'fn'});
+  keys.forEach(k=>{
+    const b=el('button','btn sm',k.t);
+    b.style.borderColor=k.c==='num'?'var(--gold)':'';
+    b.onclick=()=>{
+      const inp=$('g24expr');const pos=inp.selectionStart||inp.value.length;
+      if(k.t==='⌫')inp.value=inp.value.slice(0,pos-1)+inp.value.slice(pos);
+      else if(k.t==='清空')inp.value='';
+      else inp.value=inp.value.slice(0,pos)+k.t+inp.value.slice(pos);
+      inp.focus();
+    };
+    pad.appendChild(b);
+  });
+  $('g24expr').value='';
+  g24Status('四张牌已就绪 · 已答对 '+G24.score+' 局 · 连击 '+G24.streak);
+}
+function g24Status(msg,cls){$('g24status').innerHTML='<b class="'+(cls||'')+'">'+msg+'</b>';}
+function g24Check(){
+  const s=$('g24expr').value.trim();
+  if(!s){toast('请先输入算式');return;}
+  const t=tokExpr(s);
+  if(!t){g24Status('表达式无法解析，请检查括号与符号','lose');return;}
+  const used=t.filter(x=>x.k==='n').map(x=>x.v);
+  const okUsed=used.length===4&&used.slice().sort((a,b)=>a-b).join()===G24.nums.slice().sort((a,b)=>a-b).join();
+  if(!okUsed){g24Status('必须把四张牌各用恰好一次','lose');return;}
+  const f=evalExpr(s);
+  if(!f){g24Status('算式计算失败（可能除以零）','lose');return;}
+  if(f.eq(new F(24,1))){
+    G24.streak++;G24.score++;
+    g24Status('正确！'+s.replace(/\*/g,'×').replace(/\//g,'÷')+' = 24，连击 '+G24.streak,'win');
+    toast('答对了，连击 '+G24.streak);
+  }else{
+    G24.streak=0;
+    const v=f.d===1?f.n:(f.n+'/'+f.d);
+    g24Status('结果是 '+v+'，不是 24。连击已清零。','lose');
+  }
+}
+function g24Hint(){
+  if(!G24.sols||!G24.sols.length){g24Status('本题暂无解？','lose');return;}
+  const ex=G24.sols[0].e.replace(/\*/g,'×').replace(/\//g,'÷');
+  g24Status('参考解法：'+ex,'warn');
+}
+$('g24check').onclick=g24Check;$('g24hint').onclick=g24Hint;$('g24new').onclick=g24New;
+$('g24expr').addEventListener('keydown',e=>{if(e.key==='Enter')g24Check();});
+g24New();
+
+
+</script>
+</body>
+</html>

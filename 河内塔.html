@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>河内塔 · 经典谜题收藏馆</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317322C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23F4EBDD' font-family='Georgia'%3E%3F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#2B2118;
+    --paper:#F4EBDD;
+    --paper2:#E9DEC9;
+    --bg:#17322C;
+    --bg2:#1F3D35;
+    --accent:#C8502E;
+    --gold:#D9A441;
+    --line:#C9BCA4;
+    --ok:#3E7C59;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1000px 520px at 88% -8%, rgba(216,164,65,.13), transparent 60%),
+      var(--bg);
+    color:var(--paper);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+
+  /* ===== 顶栏 ===== */
+  .topbar{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid rgba(244,235,221,.16);
+  }
+  a.back{
+    color:var(--gold);text-decoration:none;font-size:14px;
+    border:1px solid rgba(217,164,65,.4);border-radius:999px;
+    padding:6px 14px;transition:background .15s;
+  }
+  a.back:hover{background:rgba(217,164,65,.14)}
+  h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:24px;font-weight:700;letter-spacing:.04em}
+  .stats{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    background:rgba(244,235,221,.08);border:1px solid rgba(244,235,221,.18);
+    border-radius:12px;padding:7px 14px;font-size:13px;text-align:center;
+  }
+  .chip b{display:block;font-size:17px;color:var(--gold)}
+  .chip.small b{font-size:14px}
+  select,button{
+    font-family:inherit;font-size:13px;color:var(--paper);
+    background:var(--bg2);border:1px solid rgba(244,235,221,.28);
+    border-radius:10px;padding:6px 10px;cursor:pointer;
+  }
+  button.btn{background:var(--accent);border-color:var(--accent);font-weight:700}
+  button.btn:hover{filter:brightness(1.08)}
+
+  /* ===== 游戏区 ===== */
+  .board-wrap{
+    margin-top:26px;background:var(--paper);color:var(--ink);
+    border-radius:20px;padding:18px 16px 10px;
+    box-shadow:0 14px 30px rgba(0,0,0,.28);
+  }
+  .hint{
+    text-align:center;font-size:13px;color:#6b5f4e;padding-bottom:10px;
+  }
+  .board{
+    position:relative;height:340px;
+    background:linear-gradient(180deg,#FBF5EA 0%, var(--paper2) 100%);
+    border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;
+  }
+  .peg-line{
+    position:absolute;top:0;bottom:52px;
+    width:10px;margin-left:-5px;border-radius:5px;
+    background:linear-gradient(90deg,#8A6F4B,#B08B5E 55%,#8A6F4B);
+    box-shadow:0 0 0 1px rgba(43,33,24,.15);
+    cursor:pointer;
+  }
+  .peg-base{
+    position:absolute;left:0;right:0;bottom:38px;height:14px;
+    background:linear-gradient(180deg,#B08B5E,#8A6F4B);
+    border-radius:7px;cursor:pointer;
+  }
+  .peg-hot{
+    position:absolute;top:0;bottom:38px;width:100%;
+    cursor:pointer;z-index:3;
+  }
+  .peg-hot:hover{background:rgba(200,80,46,.07)}
+  .peg-hot.over{background:rgba(200,80,46,.14)}
+  .disc{
+    position:absolute;z-index:2;height:26px;border-radius:8px;
+    border-bottom:4px solid rgba(0,0,0,.16);
+    box-shadow:0 3px 6px rgba(43,33,24,.22);
+    transition:left .22s cubic-bezier(.34,1.1,.45,1), bottom .22s cubic-bezier(.34,1.1,.45,1), transform .12s;
+    animation:drop .28s cubic-bezier(.3,1.4,.5,1);
+  }
+  .disc.sel{transform:translateY(-12px);box-shadow:0 8px 14px rgba(200,80,46,.35);z-index:3}
+  .disc.warn{animation:shake .32s}
+  @keyframes drop{from{transform:scale(1.08) translateY(-26px);opacity:.4}to{transform:none;opacity:1}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  .tip{text-align:center;font-size:13px;color:#6b5f4e;padding:12px 6px 4px}
+
+  /* ===== 弹窗 ===== */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(13,28,23,.66);
+    display:none;align-items:center;justify-content:center;z-index:50;
+    backdrop-filter:blur(3px);
+  }
+  .modal-mask.show{display:flex}
+  .modal{
+    background:var(--paper);color:var(--ink);border-radius:20px;
+    padding:34px 36px;max-width:400px;width:92%;text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.4);
+    animation:pop .3s cubic-bezier(.3,1.4,.5,1);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+  .modal .big{font-size:52px;line-height:1}
+  .modal h2{font-family:"Noto Serif SC",serif;font-size:26px;margin:10px 0 6px}
+  .modal p{font-size:14px;color:#5b4f3e}
+  .modal .record{color:var(--ok);font-weight:700;font-size:14px;margin-top:6px}
+  .modal .btns{margin-top:20px;display:flex;gap:10px;justify-content:center}
+  .modal button{
+    font-size:15px;padding:10px 22px;border-radius:12px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-family:inherit;font-weight:700;
+  }
+  .modal button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .modal button:hover{filter:brightness(1.06)}
+  @media (max-width:640px){
+    .board{height:280px}
+    .stats{width:100%;margin-left:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="经典谜题.html">← 返回大厅</a>
+    <h1>河内塔</h1>
+    <div class="stats">
+      <div class="chip"><b id="moves">0</b>已走步数</div>
+      <div class="chip"><b id="minMoves">31</b>最少步数</div>
+      <div class="chip small"><b>3</b>盘数
+        <select id="discNum" aria-label="选择盘子数量">
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+      <button class="btn" id="resetBtn">重新开始</button>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="hint">点击柱子取起顶上的盘子，再点另一根柱子放下。目标：把整座塔移到<b>最右</b>的柱子。</div>
+    <div class="board" id="board">
+      <div class="peg-base" style="left:0"></div>
+      <div class="peg-base" style="left:33.333%"></div>
+      <div class="peg-base" style="left:66.666%"></div>
+      <div class="peg-line" style="left:16.666%"></div>
+      <div class="peg-line" style="left:50%"></div>
+      <div class="peg-line" style="left:83.333%"></div>
+      <div class="peg-hot" data-peg="0" style="left:0"></div>
+      <div class="peg-hot" data-peg="1" style="left:33.333%"></div>
+      <div class="peg-hot" data-peg="2" style="left:66.666%"></div>
+    </div>
+    <div class="tip">小盘可以压大盘，大盘不能压小盘。8 个盘时最少要 255 步——耐心本身就是解法。</div>
+  </div>
+</div>
+
+<div class="modal-mask" id="winMask">
+  <div class="modal">
+    <div class="big">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#C8502E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v4l-2 2v12H8V9L6 7V3z"/><path d="M6 5H4a2 2 0 0 0 2 4"/><path d="M18 5h2a2 2 0 0 1-2 4"/><path d="M10 14h4"/></svg>
+    </div>
+    <h2>塔，移成了！</h2>
+    <p id="winText">你用了 0 步完成。</p>
+    <p class="record" id="winRecord"></p>
+    <div class="btns">
+      <button id="againBtn">再来一局</button>
+      <button class="primary" id="homeBtn">返回大厅</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var COLORS = ['#5C3A21','#7A4E2D','#96633A','#B07A48','#C8945A','#D9A441','#E2B45E','#EFCB85'];
+  var PEG_X = [16.666, 50, 83.333];
+  var board = document.getElementById('board');
+  var movesEl = document.getElementById('moves');
+  var minEl = document.getElementById('minMoves');
+  var winMask = document.getElementById('winMask');
+  var winText = document.getElementById('winText');
+  var winRecord = document.getElementById('winRecord');
+
+  var N = 5;
+  var pegs = [[],[],[]];   // 每根柱的盘号（0=最小 … N-1=最大），数组尾部是栈顶
+  var selected = null;     // {peg, disc}
+  var moves = 0;
+  var won = false;
+  var discEls = {};        // discId -> DOM
+
+  function reset(n){
+    N = n;
+    pegs = [];
+    for (var i=0;i<3;i++) pegs.push([]);
+    for (var d=N-1;d>=0;d--) pegs[0].push(d);
+    selected = null;
+    moves = 0;
+    won = false;
+    minEl.textContent = Math.pow(2, N) - 1;
+    movesEl.textContent = 0;
+    render(true);
+  }
+
+  function render(hard){
+    // 清掉不存在的盘子元素
+    var alive = {};
+    for (var p=0;p<3;p++){
+      var bottom = 38;
+      for (var i=0;i<pegs[p].length;i++){
+        var d = pegs[p][i];
+        alive[d] = true;
+        var el = discEls[d];
+        if (!el){
+          el = document.createElement('div');
+          el.className = 'disc';
+          el.style.background = 'linear-gradient(180deg, ' + lighten(COLORS[d]) + ', ' + COLORS[d] + ')';
+          board.appendChild(el);
+          discEls[d] = el;
+        }
+        el.style.width = discWidth(d) + '%';
+        el.style.left = 'calc(' + PEG_X[p] + '% - ' + (discWidth(d)/2) + '%)';
+        el.style.bottom = bottom + 'px';
+        el.classList.remove('sel','warn');
+        bottom += 26;
+      }
+    }
+    for (var k in discEls){
+      if (!alive[k]){ discEls[k].remove(); delete discEls[k]; }
+    }
+    if (hard) { /* 占位：无需额外处理 */ }
+  }
+
+  function lighten(hex){
+    var n = parseInt(hex.slice(1),16);
+    var r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+    r=Math.min(255,r+46);g=Math.min(255,g+40);b=Math.min(255,b+34);
+    return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+  }
+
+  function discWidth(d){
+    var span = 78; // 最大盘占宽百分比
+    var unit = span / N;
+    return Math.round((unit * (d+1)) * 10) / 10;
+  }
+
+  // ===== 交互 =====
+  function onPegClick(peg){
+    if (won) return;
+    if (selected === null){
+      if (pegs[peg].length === 0) return;
+      var top = pegs[peg][pegs[peg].length-1];
+      selected = {peg: peg, disc: top};
+      discEls[top].classList.add('sel');
+      return;
+    }
+    var from = selected.peg;
+    var disc = selected.disc;
+    var targetTop = pegs[peg].length ? pegs[peg][pegs[peg].length-1] : -1;
+    // 取消选择：点回同一根柱
+    if (peg === from){
+      discEls[disc].classList.remove('sel');
+      selected = null;
+      return;
+    }
+    if (targetTop !== -1 && targetTop < disc){
+      // 非法：大盘压小盘
+      discEls[disc].classList.remove('sel');
+      discEls[disc].classList.add('warn');
+      var el = discEls[disc];
+      setTimeout(function(){ el.classList.remove('warn'); }, 340);
+      selected = null;
+      return;
+    }
+    // 合法移动
+    pegs[from].pop();
+    pegs[peg].push(disc);
+    moves++;
+    movesEl.textContent = moves;
+    selected = null;
+    render();
+    checkWin();
+  }
+
+  function checkWin(){
+    if (pegs[2].length === N && !won){
+      won = true;
+      var best = Math.pow(2,N)-1;
+      winText.textContent = '你用 ' + moves + ' 步完成了' + N + ' 盘河内塔' + (moves<=best ? '，已是最优！' : '（最少 ' + best + ' 步）');
+      // 记录最优步数
+      var old = localStorage.getItem('puzzle-best-hanoi');
+      var oldN = localStorage.getItem('puzzle-best-hanoi-n');
+      if (!old || moves < +old || +oldN !== N){
+        localStorage.setItem('puzzle-best-hanoi', moves);
+        localStorage.setItem('puzzle-best-hanoi-n', N);
+        winRecord.textContent = '新纪录！' + N + ' 盘最优 ' + moves + ' 步';
+      } else {
+        winRecord.textContent = '你的 ' + N + ' 盘纪录：' + old + ' 步';
+      }
+      setTimeout(function(){ winMask.classList.add('show'); }, 450);
+    }
+  }
+
+  board.querySelectorAll('.peg-hot').forEach(function(el){
+    el.addEventListener('click', function(){
+      onPegClick(+el.getAttribute('data-peg'));
+    });
+  });
+  document.getElementById('discNum').addEventListener('change', function(){
+    reset(+this.value);
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    reset(N);
+  });
+  document.getElementById('againBtn').addEventListener('click', function(){
+    winMask.classList.remove('show');
+    reset(N);
+  });
+  document.getElementById('homeBtn').addEventListener('click', function(){
+    location.href = '经典谜题.html';
+  });
+
+  reset(5);
+})();
+</script>
+</body>
+</html>

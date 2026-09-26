@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>经典谜题收藏馆 · 四款智力游戏</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317322C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23F4EBDD' font-family='Georgia'%3E%3F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --ink:#2B2118;
+    --paper:#F4EBDD;
+    --paper2:#E9DEC9;
+    --bg:#17322C;
+    --bg2:#1F3D35;
+    --accent:#C8502E;
+    --gold:#D9A441;
+    --line:#C9BCA4;
+    --ok:#3E7C59;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(216,164,65,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(200,80,46,.16), transparent 55%),
+      var(--bg);
+    color:var(--paper);
+    min-height:100vh;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 64px}
+  header.top{
+    text-align:center;
+    padding:26px 0 8px;
+  }
+  .kicker{
+    display:inline-block;
+    letter-spacing:.35em;
+    font-size:13px;
+    color:var(--gold);
+    border:1px solid rgba(217,164,65,.45);
+    border-radius:999px;
+    padding:5px 16px 5px 20px;
+    margin-bottom:18px;
+  }
+  h1{
+    font-family:"Noto Serif SC","Songti SC",serif;
+    font-size:clamp(34px,6vw,54px);
+    font-weight:900;
+    letter-spacing:.06em;
+  }
+  .sub{
+    margin-top:12px;
+    color:rgba(244,235,221,.78);
+    font-size:15px;
+    max-width:560px;
+    margin-left:auto;margin-right:auto;
+  }
+  .grid{
+    margin-top:44px;
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:22px;
+  }
+  a.card{
+    position:relative;
+    display:block;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:18px;
+    padding:26px 24px 22px;
+    text-decoration:none;
+    overflow:hidden;
+    transition:transform .18s ease, box-shadow .18s ease;
+    box-shadow:0 10px 24px rgba(0,0,0,.25);
+  }
+  a.card:hover{transform:translateY(-4px);box-shadow:0 18px 34px rgba(0,0,0,.32)}
+  a.card:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .ribbon{
+    position:absolute;top:0;right:0;
+    background:var(--accent);color:#fff;
+    font-size:11px;letter-spacing:.14em;
+    padding:4px 14px 4px 16px;
+    border-bottom-left-radius:12px;
+    font-weight:700;
+  }
+  .icon{
+    width:52px;height:52px;
+    border-radius:13px;
+    background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;
+  }
+  .icon svg{width:30px;height:30px;stroke:var(--gold);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  h2{
+    font-family:"Noto Serif SC","Songti SC",serif;
+    font-size:24px;font-weight:700;
+  }
+  .desc{
+    margin-top:8px;font-size:14px;color:#4d4235;
+    min-height:42px;
+  }
+  .meta{
+    margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:13px;color:#6b5f4e;
+  }
+  .stars{color:var(--accent);letter-spacing:2px}
+  .best{color:var(--ok);font-weight:700}
+  .best:empty{display:none}
+  .go{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--bg);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;line-height:1;
+  }
+  footer{
+    margin-top:52px;text-align:center;
+    font-size:13px;color:rgba(244,235,221,.55);
+  }
+  footer b{color:var(--gold);font-weight:500}
+  @media (max-width:820px){
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">四 款 经 典 · 一 处 收 藏</div>
+    <h1>经典谜题收藏馆</h1>
+    <p class="sub">河内塔、狼羊菜过河、三个盒子、称球问题——四道流传百年的智力题，做成可以亲手玩的小游戏。点击卡片开始挑战。</p>
+  </header>
+
+  <main class="grid">
+    <!-- ===== 卡片 1：河内塔 ===== -->
+    <a class="card" href="河内塔.html">
+      <div class="ribbon">难度 ★★★</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="19" width="18" height="2" rx="1"/><line x1="6" y1="19" x2="6" y2="5"/><line x1="12" y1="19" x2="12" y2="5"/><line x1="18" y1="19" x2="18" y2="5"/><rect x="4.6" y="4" width="8.4" height="2" rx="1"/><rect x="6.6" y="1.6" width="4.6" height="2" rx="1"/></svg>
+      </div>
+      <h2>河内塔</h2>
+      <p class="desc">把整座塔从最左柱移到最右柱，一次只能挪一个盘子，大盘永远不许压在小盘上。</p>
+      <div class="meta">
+        <span class="stars">★★★</span>
+        <span class="best" data-key="puzzle-best-hanoi"></span>
+        <span class="go">→</span>
+      </div>
+    </a>
+
+    <!-- ===== 卡片 2：狼羊菜过河 ===== -->
+    <a class="card" href="狼羊菜过河.html">
+      <div class="ribbon">难度 ★★</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M4 17l3-9 3 9"/><path d="M9 8v9"/><path d="M6 17h9"/><path d="M14 5h4l2 12"/><path d="M14 17h-3"/></svg>
+      </div>
+      <h2>狼羊菜过河</h2>
+      <p class="desc">农夫要把狼、羊、菜都运过河，船每次只载一样。人不在时，狼吃羊、羊吃菜——想好顺序再开船。</p>
+      <div class="meta">
+        <span class="stars">★★</span>
+        <span class="best" data-key="puzzle-best-river"></span>
+        <span class="go">→</span>
+      </div>
+    </a>
+
+    <!-- ===== 卡片 3：三个盒子 ===== -->
+    <a class="card" href="三个盒子.html">
+      <div class="ribbon">难度 ★★</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5-9 5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/><path d="M7.5 10.5v8"/><path d="M16.5 10.5v8"/></svg>
+      </div>
+      <h2>三个盒子</h2>
+      <p class="desc">三个盒子标签全贴错了：苹果、橙子、混合。只摸一个水果，你能推出全部真相吗？另有蒙提霍尔概率模式。</p>
+      <div class="meta">
+        <span class="stars">★★</span>
+        <span class="best" data-key="puzzle-best-boxes"></span>
+        <span class="go">→</span>
+      </div>
+    </a>
+
+    <!-- ===== 卡片 4：称球问题 ===== -->
+    <a class="card" href="称球问题.html">
+      <div class="ribbon">难度 ★★★★</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="9" x2="12" y2="3"/><circle cx="12" cy="2" r="1.4"/><path d="M2 14a4 4 0 0 1 4-4"/><path d="M22 14a4 4 0 0 0-4-4"/><path d="M2 14h4a2 2 0 0 1 0 4H2z"/><path d="M22 14h-4a2 2 0 0 0 0 4h4z"/></svg>
+      </div>
+      <h2>称球问题</h2>
+      <p class="desc">12 个球里混进 1 个重量异常的，不知道它偏重还是偏轻。天平最多称 3 次，找出它。</p>
+      <div class="meta">
+        <span class="stars">★★★★</span>
+        <span class="best" data-key="puzzle-best-weighing"></span>
+        <span class="go">→</span>
+      </div>
+    </a>
+  </main>
+
+  <footer>
+    <p>每个游戏都是独立的 HTML 文件，可单独打开；放在同一文件夹中，从本页即可互相跳转。</p>
+    <p style="margin-top:6px">记录会自动保存在本机浏览器，挑战你的<b>最少步数 / 最短用时</b>。</p>
+  </footer>
+</div>
+
+<script>
+  // ===== 读取各游戏的最优记录，显示在卡片上 =====
+  var KEYS = {
+    'puzzle-best-hanoi':   function(v){ return '最优 ' + v + ' 步'; },
+    'puzzle-best-river':   function(v){ return '最优 ' + v + ' 步'; },
+    'puzzle-best-boxes':   function(v){ return '最少 ' + v + ' 次通关'; },
+    'puzzle-best-weighing':function(v){ return '最快 ' + v + ' 次称出'; }
+  };
+  document.querySelectorAll('.best[data-key]').forEach(function(el){
+    var key = el.getAttribute('data-key');
+    var v = localStorage.getItem(key);
+    if (v && KEYS[key]) { el.textContent = KEYS[key](v); }
+  });
+</script>
+</body>
+</html>

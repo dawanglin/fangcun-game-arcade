@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>真假话</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231c2047'/%3E%3Ccircle cx='12' cy='12' r='8' fill='none' stroke='%23f5b64c' stroke-width='2'/%3E%3Cpath d='M8.5 12.5l2.5 2.5 4.5-5' stroke='%2358d3e8' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root{--bg:#0d0f22;--surface:#161935;--surface2:#1c2047;--line:rgba(255,255,255,.1);
+    --text:#eef0ff;--muted:#9aa2cc;--amber:#f5b64c;--cyan:#58d3e8;--danger:#ff5d5d;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;padding:20px 0 30px}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(560px 340px at 50% -10%, rgba(88,211,232,.10), transparent 60%)}
+  #app{width:min(94vw,460px)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 4px 12px}
+  .brand h1{font-size:22px;font-weight:800}.brand p{font-size:11.5px;color:var(--muted)}
+  .score-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 12px;text-align:right}
+  .score-box .k{font-size:10px;color:var(--muted)}.score-box b{font-size:16px;font-weight:800;color:var(--amber);cursor:pointer}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .intro{font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:12px}
+  .stmt{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .stmt .txt{font-size:14px;font-weight:600;flex:1}
+  .stmt .op{display:flex;gap:8px}
+  .stmt .op button{border:1px solid var(--line);background:var(--surface);color:var(--muted);font-family:inherit;
+    font-size:13px;padding:7px 16px;border-radius:9px;cursor:pointer}
+  .stmt .op button.t-on{background:var(--cyan);color:#062a30;font-weight:700;border-color:var(--cyan)}
+  .stmt .op button.f-on{background:var(--danger);color:#fff;font-weight:700;border-color:var(--danger)}
+  .tools{display:flex;gap:8px}
+  .tools button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+  .tip{color:var(--muted);font-size:12px;text-align:center;margin-top:10px;line-height:1.8}
+  .overlay{position:fixed;inset:0;display:none;z-index:9;align-items:center;justify-content:center;background:rgba(10,12,30,.86);text-align:center;padding:24px}
+  .overlay.show{display:flex}.overlay .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:360px;width:100%}
+  .overlay h2{font-size:26px;font-weight:800}.overlay .sub{font-size:13px;color:var(--muted);margin:10px 0 16px;line-height:2}
+  .btn{width:100%;border:0;cursor:pointer;font-family:inherit;background:var(--amber);color:#20170a;font-size:15px;font-weight:700;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>真假话</h1><p>5 句话 · 找出谁说真话</p></div>
+    <div class="score-box"><span class="k">新题</span><b id="newbtn">换题</b></div>
+  </header>
+  <div class="panel">
+    <p class="intro">下面 5 句话中，有 <b id="tcnt" style="color:var(--cyan)">2</b> 句是真话，其余是假话。逐句判断真假，全对通关。</p>
+    <div id="stmts"></div>
+    <div class="tools"><button id="check">检查答案</button><button id="new">换一题</button></div>
+  </div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 id="ot" style="color:#57c96b">全对！</h2><div class="sub" id="os"></div><button class="btn" id="restart">再来一题</button></div></div>
+<script>
+(function(){
+  var stmts=[],guess={};
+  function gen(){
+    var list=[
+      ['3 + 5 = 8',true],['7 - 2 = 4',false],['9 × 3 = 27',true],['16 ÷ 4 = 5',false],
+      ['6 × 7 = 42',true],['12 - 8 = 3',false],['4 + 9 = 14',false],['5 × 5 = 25',true],
+      ['18 ÷ 6 = 3',true],['8 + 8 = 15',false],['11 - 6 = 5',true],['7 × 8 = 56',true],
+      ['20 ÷ 5 = 5',false],['13 + 4 = 17',true],['9 - 4 = 6',false],['3 × 8 = 24',true],
+      ['10 + 12 = 22',true],['6 - 3 = 4',false],['15 ÷ 3 = 4',false],['2 × 9 = 19',false]
+    ];
+    function sh(a){for(var i=a.length-1;i>0;i--){var k=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[k];a[k]=t;}return a;}
+    var pool=sh(list.slice());
+    // 挑 2 真 3 假
+    var trues=pool.filter(function(x){return x[1];}).slice(0,2);
+    var falses=pool.filter(function(x){return !x[1];}).slice(0,3);
+    stmts=sh(trues.concat(falses));
+    guess={};
+    stmts.forEach(function(s,i){guess[i]=0;});
+    document.getElementById('tcnt').textContent='2';
+  }
+  function render(){
+    var el=document.getElementById('stmts');el.innerHTML='';
+    stmts.forEach(function(s,i){
+      var d=document.createElement('div');d.className='stmt';
+      var t=document.createElement('div');t.className='txt';t.textContent=(i+1)+'. '+s[0];
+      var op=document.createElement('div');op.className='op';
+      var tb=document.createElement('button');tb.textContent='真';
+      var fb=document.createElement('button');fb.textContent='假';
+      if(guess[i]===1)tb.classList.add('t-on');
+      if(guess[i]===2)fb.classList.add('f-on');
+      tb.addEventListener('click',function(){guess[i]=guess[i]===1?0:1;render();});
+      fb.addEventListener('click',function(){guess[i]=guess[i]===2?0:2;render();});
+      op.appendChild(tb);op.appendChild(fb);
+      d.appendChild(t);d.appendChild(op);
+      el.appendChild(d);
+    });
+  }
+  function check(){
+    var ok=true;
+    stmts.forEach(function(s,i){if(guess[i]!==(s[1]?1:2))ok=false;});
+    if(ok){
+      document.getElementById('os').innerHTML=stmts.map(function(s,i){return (i+1)+'. '+s[0]+' → '+(s[1]?'真':'假');}).join('<br>');
+      document.getElementById('overlay').classList.add('show');
+    }else alert('还有判断不对，重新数一数');
+  }
+  function next(){document.getElementById('overlay').classList.remove('show');gen();render();}
+  document.getElementById('check').addEventListener('click',check);
+  document.getElementById('new').addEventListener('click',next);
+  document.getElementById('newbtn').addEventListener('click',next);
+  document.getElementById('restart').addEventListener('click',next);
+  gen();render();
+})();
+</script>
+</body>
+</html>

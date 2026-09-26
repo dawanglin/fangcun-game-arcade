@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18324a">
+  <meta name="description" content="32 款无需安装、打开即玩的中文网页游戏。">
+  <title>方寸游戏馆 · 32 款即开即玩</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/styles.css?v=2">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="返回方寸游戏馆首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>方寸游戏馆</span>
+    </a>
+    <nav class="main-nav" aria-label="主要导航">
+      <a href="#home" data-nav="home">游戏库</a>
+      <a href="#category=logic" data-nav="logic">逻辑推理</a>
+      <a href="#category=numbers" data-nav="numbers">数字棋盘</a>
+      <a href="#category=casual" data-nav="casual">休闲挑战</a>
+    </nav>
+    <button class="search-toggle" type="button" aria-label="搜索游戏" aria-expanded="false">搜索 <kbd>/</kbd></button>
+  </header>
+
+  <div class="search-panel" hidden>
+    <label for="game-search">找一款游戏</label>
+    <div class="search-row">
+      <input id="game-search" type="search" placeholder="输入数独、推理、扫雷……" autocomplete="off">
+      <button type="button" class="search-close">关闭</button>
+    </div>
+    <div id="search-results" class="search-results" aria-live="polite"></div>
+  </div>
+
+  <main id="main" tabindex="-1"></main>
+
+  <footer class="site-footer">
+    <p>32 款网页游戏 · 无需安装 · 进度保存在当前浏览器</p>
+    <a href="#home">回到游戏库</a>
+  </footer>
+
+  <noscript>请启用 JavaScript 以使用分类导航。你仍可直接打开目录中的任意游戏 HTML 文件。</noscript>
+  <script src="assets/app.js?v=2"></script>
+</body>
+</html>
