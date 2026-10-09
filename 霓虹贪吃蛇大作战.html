@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>霓虹贪吃蛇 · 大作战</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%2305070f'/%3E%3Ccircle cx='12' cy='13' r='4.5' fill='%2300f5d4'/%3E%3Ccircle cx='21' cy='20' r='4.5' fill='%23f15bb5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#05070f;
+  --panel:rgba(11,18,40,.82);
+  --panel-line:rgba(0,245,212,.16);
+  --cyan:#00f5d4;
+  --blue:#00bbf9;
+  --pink:#f15bb5;
+  --purple:#9b5de5;
+  --yellow:#fee440;
+  --text:#eaf2ff;
+  --muted:#8a96bd;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  background:radial-gradient(1200px 800px at 50% -10%,#0d1638 0%,#070b1f 45%,#04060e 100%);
+  color:var(--text);
+  font-family:"Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+
+/* ===== 通用面板 ===== */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:var(--radius);
+  backdrop-filter:blur(8px);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+.hud{position:fixed;z-index:5;padding:12px 16px}
+
+/* 左上数据 */
+#stats{top:16px;left:16px;min-width:148px}
+.stat-row{display:flex;align-items:baseline;justify-content:space-between;gap:18px}
+.stat-row + .stat-row{margin-top:6px}
+.stat-label{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.stat-val{font-family:"Orbitron",monospace;font-weight:700;font-size:20px;color:var(--cyan);font-variant-numeric:tabular-nums}
+.stat-row.kill .stat-val{color:var(--pink)}
+
+/* 右上排行榜 */
+#board{top:16px;right:16px;width:188px;padding:12px 14px}
+.board-title{font-family:"Orbitron",monospace;font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:9px;text-transform:uppercase}
+.board-row{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 4px;border-radius:7px}
+.board-row .rank{font-family:"Orbitron",monospace;width:16px;color:var(--muted);font-size:11px}
+.board-row .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.board-row .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board-row .ln{font-family:"Orbitron",monospace;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.board-row.me{background:rgba(0,245,212,.12)}
+.board-row.me .nm{color:var(--cyan);font-weight:700}
+
+/* 右下小地图 */
+#minimapWrap{position:fixed;right:16px;bottom:16px;z-index:5;padding:6px;border-radius:10px}
+#minimap{display:block;border-radius:6px}
+
+/* 顶部工具栏 */
+#toolbar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:8px}
+.tbtn{width:46px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:11px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--panel-line);color:var(--cyan);
+  transition:border-color .15s,background .15s,color .15s}
+.tbtn:hover{border-color:rgba(0,245,212,.4)}
+.tbtn svg{width:20px;height:20px}
+#autoBtn{font-family:"Orbitron",monospace;font-weight:700;font-size:11px;letter-spacing:.04em}
+#autoBtn.on{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04121a;border-color:transparent}
+#colorDot{width:20px;height:20px;border-radius:50%;background:var(--cyan)}
+#autoTag{position:fixed;top:66px;left:50%;transform:translateX(-50%);z-index:6;display:none;
+  font-family:"Orbitron",monospace;font-size:11px;letter-spacing:.14em;color:var(--cyan);
+  background:var(--panel);border:1px solid var(--panel-line);padding:5px 13px;border-radius:8px}
+
+/* ===== 遮罩 ===== */
+.overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,6,14,.72);backdrop-filter:blur(6px);padding:24px}
+.overlay.hidden{display:none}
+.card{width:min(460px,92vw);padding:34px 32px 30px;text-align:center}
+.logo{font-family:"Orbitron",monospace;font-weight:900;font-size:clamp(30px,7vw,46px);line-height:1.05;
+  letter-spacing:.02em;color:var(--cyan);text-shadow:0 0 26px rgba(0,245,212,.55)}
+.logo .b{color:var(--pink);text-shadow:0 0 26px rgba(241,91,181,.55)}
+.sub{margin-top:10px;color:var(--muted);font-size:14px;letter-spacing:.04em}
+.howto{margin:24px 0 6px;display:grid;gap:10px;text-align:left}
+.how{display:flex;gap:12px;align-items:flex-start;background:rgba(0,245,212,.05);
+  border:1px solid rgba(0,245,212,.1);border-radius:11px;padding:11px 13px;font-size:13.5px;line-height:1.5}
+.how svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--cyan)}
+.how b{color:var(--text);font-weight:700}
+.how .pink{color:var(--pink)}
+.best{margin-top:18px;font-size:13px;color:var(--muted)}
+.best b{font-family:"Orbitron",monospace;color:var(--yellow);font-size:16px;margin-left:6px}
+.btn{margin-top:22px;width:100%;padding:15px;border:none;border-radius:12px;cursor:pointer;
+  font-family:"Orbitron",monospace;font-weight:700;font-size:17px;letter-spacing:.08em;color:#04121a;
+  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  box-shadow:0 8px 26px rgba(0,245,212,.35);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 12px 32px rgba(0,245,212,.45)}
+.btn:active{transform:translateY(0)}
+
+/* 死亡结算 */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.result{background:rgba(0,245,212,.05);border:1px solid rgba(0,245,212,.1);border-radius:11px;padding:14px 10px}
+.result .k{font-size:12px;color:var(--muted)}
+.result .v{font-family:"Orbitron",monospace;font-size:24px;font-weight:700;margin-top:5px;color:var(--cyan);font-variant-numeric:tabular-nums}
+.result.pink .v{color:var(--pink)}
+.result.yellow .v{color:var(--yellow)}
+.newrecord{margin-top:14px;color:var(--yellow);font-weight:700;font-size:14px;letter-spacing:.05em}
+.dead-title{font-family:"Orbitron",monospace;font-weight:900;font-size:clamp(28px,6vw,40px);color:var(--pink);
+  text-shadow:0 0 26px rgba(241,91,181,.5)}
+.death-cause{margin-top:10px;color:var(--muted);font-size:13.5px}
+.death-cause b{color:var(--pink);font-weight:700}
+
+@media (max-width:560px){
+  #board{width:150px;padding:10px;top:12px;right:12px}
+  #stats{top:12px;left:12px;min-width:128px;padding:10px 12px}
+  .stat-val{font-size:17px}
+  #minimapWrap{right:12px;bottom:12px;transform:scale(.85);transform-origin:bottom right}
+  .card{padding:26px 22px 24px}
+  #toolbar{top:12px}
+  #autoTag{top:60px}
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- 左上数据 -->
+<div class="panel hud" id="stats">
+  <div class="stat-row"><span class="stat-label">长度</span><span class="stat-val" id="vLen">10</span></div>
+  <div class="stat-row kill"><span class="stat-label">击杀</span><span class="stat-val" id="vKill">0</span></div>
+</div>
+
+<!-- 右上排行榜 -->
+<div class="panel hud" id="board">
+  <div class="board-title">排行榜</div>
+  <div id="boardList"></div>
+</div>
+
+<!-- 右下小地图 -->
+<div class="panel" id="minimapWrap"><canvas id="minimap" width="120" height="120"></canvas></div>
+
+<!-- 顶部工具栏 -->
+<div id="toolbar">
+  <button id="soundBtn" class="tbtn" aria-label="声音开关">
+    <svg id="icSoundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
+    <svg id="icSoundOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>
+  </button>
+  <button id="autoBtn" class="tbtn" aria-label="自动托管">AUTO</button>
+  <button id="colorBtn" class="tbtn" aria-label="更换颜色"><span id="colorDot"></span></button>
+</div>
+<div id="autoTag">自动托管中</div>
+
+<!-- 开始遮罩 -->
+<div class="overlay" id="menu">
+  <div class="panel card">
+    <div class="logo">霓虹蛇<span class="b">·大作战</span></div>
+    <div class="sub">10 条 AI 蛇同场厮杀，活到最后，登上榜首</div>
+    <div class="howto">
+      <div class="how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        <div><b>移动 / 转向</b>：电脑移动鼠标，手机触屏拖动，蛇头朝指针方向游。</div></div>
+      <div class="how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        <div><b>加速冲刺</b>：按住鼠标 / 空格 / 手指，会消耗长度，可用来围杀对手。</div></div>
+      <div class="how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 4 2 6 2 9h10c0-3 2-5 2-9a7 7 0 0 0-7-7z"></path></svg>
+        <div><b>生存法则</b>：吃光点长大；<span class="pink">蛇头撞到任何蛇身就死</span>，逼对手撞你！</div></div>
+      <div class="how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect><rect x="9" y="9" width="6" height="6" rx="1"></rect></svg>
+        <div><b>自动托管 / 换色</b>：顶部「AUTO」可让 AI 替你玩，随时切回；圆点按钮更换你的颜色。</div></div>
+    </div>
+    <div class="best">历史最高长度<b id="menuBest">0</b></div>
+    <button class="btn" id="startBtn">开 始 对 战</button>
+  </div>
+</div>
+
+<!-- 死亡遮罩 -->
+<div class="overlay hidden" id="dead">
+  <div class="panel card">
+    <div class="dead-title">你 被 击 杀 了</div>
+    <div class="death-cause" id="dCause"></div>
+    <div class="result-grid">
+      <div class="result"><div class="k">本局长度</div><div class="v" id="dLen">0</div></div>
+      <div class="result pink"><div class="k">击杀数</div><div class="v" id="dKill">0</div></div>
+      <div class="result yellow" style="grid-column:1/3"><div class="k">历史最高长度</div><div class="v" id="dBest">0</div></div>
+    </div>
+    <div class="newrecord" id="newRec" style="display:none">新纪录！你登上了自己的榜首</div>
+    <button class="btn" id="retryBtn">再 来 一 局</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   霓虹蛇 · 大作战 —— 单文件 Canvas 游戏
+   ============================================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const mini = document.getElementById('minimap');
+const mctx = mini.getContext('2d');
+
+/* ---------- 常量 ---------- */
+const WORLD = 3400;                 // 世界边长（正方形）
+const FOOD_TARGET = 460;            // 普通食物目标数量
+const AI_COUNT = 10;                // AI 蛇数量
+const BASE_SPEED = 2.7;             // 基础速度（px/帧）
+const BOOST_MULT = 1.85;            // 加速倍率
+const TURN_RATE = 0.105;            // 最大转向角速度（弧度/帧）
+const SEG_GAP = 5;                  // 身体采样点间距
+const START_LEN = 10;
+/* 色相均匀分布的霓虹色板，12 种，保证每条蛇颜色唯一 */
+const PALETTE = [];
+for(let h=0;h<360;h+=30) PALETTE.push('hsl('+h+',100%,62%)');
+const NEON = PALETTE;
+let PLAYER_COLOR = PALETTE[6];      // 玩家默认青色
+function freeColor(){
+  const used = new Set();
+  if(player) used.add(player.color);
+  for(const s of snakes) if(!s.dead) used.add(s.color);
+  const avail = PALETTE.filter(c=>!used.has(c));
+  return avail.length ? avail[(Math.random()*avail.length)|0]
+                      : PALETTE[(Math.random()*PALETTE.length)|0];
+}
+const AI_NAMES = ['粉影','闪电','幽紫','蓝焰','赤瞳','青柠','橘猫','绯樱','海啸','星尘'];
+
+/* ---------- DOM ---------- */
+const el = id => document.getElementById(id);
+const vLen=el('vLen'), vKill=el('vKill'), boardList=el('boardList');
+const menu=el('menu'), dead=el('dead'), menuBest=el('menuBest');
+
+/* ---------- 状态 ---------- */
+let state = 'menu';                 // menu | playing | dead
+let snakes = [], foods = [], player = null;
+let cam = {x:WORLD/2, y:WORLD/2};
+let score = 0, kills = 0, best = +(localStorage.getItem('neonSnakeBest')||0);
+let mouse = {x:0, y:0, down:false};
+let DPR = 1, VW = 0, VH = 0;
+let lastTime = 0;
+let toasts = [], deathCause = '', particles = [], playerAuto = false;
+menuBest.textContent = best;
+
+/* ---------- 工具 ---------- */
+const rand = (a,b)=> a + Math.random()*(b-a);
+const dist2 = (ax,ay,bx,by)=>{ const dx=ax-bx, dy=ay-by; return dx*dx+dy*dy; };
+const clamp = (v,a,b)=> v<a?a:v>b?b:v;
+const angleLerp = (cur,target,t)=>{
+  let d = ((target-cur + Math.PI*3)%(Math.PI*2)) - Math.PI;
+  return cur + d*t;
+};
+function radiusOf(len){ return clamp(6 + len*0.018, 6, 22); }
+
+/* ---------- 音效（Web Audio 合成） ---------- */
+let AC=null, muted = localStorage.getItem('neonSnakeMuted')==='1';
+function initAudio(){
+  if(AC) return;
+  try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; }
+}
+function beep(freq, dur, type, vol, slide){
+  if(muted || !AC) return;
+  const t = AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type||'sine'; o.frequency.setValueAtTime(freq,t);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide), t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.12, t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(t); o.stop(t+dur+0.02);
+}
+const sfxEat = ()=> beep(520 + Math.random()*170, 0.07, 'triangle', 0.045);
+const sfxBoost = ()=> beep(180, 0.12, 'sawtooth', 0.025, 60);
+const sfxKill = ()=> { beep(300,0.18,'square',0.08,320); };
+const sfxDeath = ()=> { beep(300,0.5,'sawtooth',0.12,-240); beep(160,0.6,'square',0.07,-120); };
+
+/* ---------- 画布尺寸 ---------- */
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  VW = window.innerWidth; VH = window.innerHeight;
+  canvas.width = VW*DPR; canvas.height = VH*DPR;
+  canvas.style.width = VW+'px'; canvas.style.height = VH+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  mouse.x = VW/2; mouse.y = VH/2;
+}
+window.addEventListener('resize', resize);
+
+/* ---------- 食物 ---------- */
+function makeFood(x,y,big,color){
+  return {
+    x: x!==undefined?x:rand(40,WORLD-40),
+    y: y!==undefined?y:rand(40,WORLD-40),
+    r: big?rand(7,11):rand(3,5),
+    color: color||NEON[(Math.random()*NEON.length)|0],
+    val: big?Math.round(rand(3,6)):1,
+    big:!!big, pulse:rand(0,6.28)
+  };
+}
+function spawnDeathFood(s){
+  for(let i=0;i<s.points.length;i+=3){
+    const p=s.points[i];
+    foods.push({x:p.x+rand(-4,4),y:p.y+rand(-4,4),
+      r:s.radius*rand(.8,1.15),color:s.color,
+      val:Math.max(2,Math.round(s.radius*0.55)),big:true,pulse:rand(0,6.28)});
+  }
+}
+function nearestFood(s,range){
+  let b=null,bd=range*range;
+  for(let i=0;i<foods.length;i++){
+    const f=foods[i], d=dist2(s.x,s.y,f.x,f.y);
+    if(d<bd){bd=d;b=f;}
+  }
+  return b;
+}
+function nearestHead(s,range){
+  let b=null,bd=range*range;
+  for(const o of snakes){
+    if(o===s||o.dead) continue;
+    const d=dist2(s.x,s.y,o.x,o.y);
+    if(d<bd){bd=d;b=o;}
+  }
+  return b;
+}
+
+/* ---------- 蛇 ---------- */
+function makeSnake(isPlayer,idx){
+  let x,y,ang;
+  if(isPlayer){ x=WORLD/2; y=WORLD/2; ang=rand(0,6.28); }
+  else {
+    let ok=false, tries=0;
+    while(!ok && tries<40){
+      x=rand(300,WORLD-300); y=rand(300,WORLD-300); ang=rand(0,6.28);
+      ok=true;
+      for(const e of snakes){
+        if(!e.dead && dist2(x,y,e.x,e.y)<380*380){ ok=false; break; }
+      }
+      tries++;
+    }
+  }
+  const color = isPlayer ? PLAYER_COLOR : freeColor();
+  const s={
+    isPlayer, name:isPlayer?'你':AI_NAMES[idx%AI_NAMES.length],
+    x,y, angle:ang, targetAngle:ang, color,
+    score:START_LEN, radius:radiusOf(START_LEN), bodyPx:60,
+    points:[], dead:false, boosting:false, travelled:0,
+    aiTimer:rand(0,20), wander:ang, boostAcc:0, eatCd:0
+  };
+  for(let i=0;i<14;i++) s.points.push({x:x-Math.cos(ang)*i*SEG_GAP, y:y-Math.sin(ang)*i*SEG_GAP});
+  return s;
+}
+function trimPoints(s){
+  let acc=0;
+  for(let i=1;i<s.points.length;i++){
+    const a=s.points[i-1],b=s.points[i];
+    acc+=Math.hypot(b.x-a.x,b.y-a.y);
+    if(acc>s.bodyPx){ s.points.length=i+1; return; }
+  }
+}
+function eat(s){
+  if(s.eatCd>0) return;
+  for(let i=foods.length-1;i>=0;i--){
+    const f=foods[i];
+    if(Math.abs(f.x-s.x)>40||Math.abs(f.y-s.y)>40) continue;
+    const rr=s.radius+f.r;
+    if(dist2(s.x,s.y,f.x,f.y)<rr*rr){
+      s.score+=f.val;
+      if(s.isPlayer){ score=s.score; sfxEat(); }
+      foods.splice(i,1);
+    }
+  }
+}
+
+/* ---------- AI ---------- */
+function clearDir(s,ang){
+  const see=s.radius*4+34;
+  const hx=s.x+Math.cos(ang)*see, hy=s.y+Math.sin(ang)*see;
+  if(hx<110||hx>WORLD-110||hy<110||hy>WORLD-110) return false;
+  for(const o of snakes){
+    if(o===s||o.dead) continue;
+    for(let i=0;i<o.points.length;i+=3){
+      const p=o.points[i];
+      if(Math.abs(p.x-hx)>see||Math.abs(p.y-hy)>see) continue;
+      if(dist2(hx,hy,p.x,p.y)<(see*0.8+o.radius)*(see*0.8+o.radius)) return false;
+    }
+  }
+  return true;
+}
+function lookAhead(s){
+  const see=s.radius*5+30;
+  const hx=s.x+Math.cos(s.angle)*see, hy=s.y+Math.sin(s.angle)*see;
+  let threat = hx<130||hx>WORLD-130||hy<130||hy>WORLD-130;
+  if(!threat){
+    outer:
+    for(const o of snakes){
+      if(o===s||o.dead) continue;
+      for(let i=0;i<o.points.length;i+=3){
+        const p=o.points[i];
+        if(Math.abs(p.x-hx)>see||Math.abs(p.y-hy)>see) continue;
+        if(dist2(hx,hy,p.x,p.y)<(see*0.62+o.radius)*(see*0.62+o.radius)){ threat=true; break outer; }
+      }
+    }
+  }
+  if(threat){
+    const left=s.angle-1.15, right=s.angle+1.15;
+    const lOK=clearDir(s,left), rOK=clearDir(s,right);
+    if(lOK&&rOK) return Math.random()<0.5?left:right;
+    if(lOK) return left;
+    if(rOK) return right;
+    return s.angle+Math.PI;
+  }
+  return null;
+}
+function updateAI(s,dt){
+  s.aiTimer-=dt;
+  s.boosting=false;
+  const dodge=lookAhead(s);
+  if(dodge!==null){
+    s.targetAngle=dodge;
+    if(s.score>24&&Math.random()<0.05) s.boosting=true;
+  }else{
+    if(s.aiTimer<=0){
+      const f=nearestFood(s,320);
+      if(f) s.targetAngle=Math.atan2(f.y-s.y,f.x-s.x);
+      else { s.wander+=rand(-0.7,0.7); s.targetAngle=s.wander; }
+      s.aiTimer=rand(10,26);
+    }
+    if(Math.random()<0.026){
+      const t=nearestHead(s,300);
+      if(t&&t.score<s.score*1.1){
+        const px=t.x+Math.cos(t.angle)*t.radius*5;
+        const py=t.y+Math.sin(t.angle)*t.radius*5;
+        s.targetAngle=Math.atan2(py-s.y,px-s.x);
+        if(t.score<s.score*0.8&&s.score>22) s.boosting=true;
+      }
+    }
+  }
+}
+
+/* ---------- 死亡 ---------- */
+function killSnake(s,killer){
+  if(s.dead) return;
+  s.dead=true;
+  spawnDeathFood(s);
+  explode(s.x,s.y,s.color,clamp(14+s.score*0.5,14,60));
+  if(killer){
+    killer.kills=(killer.kills||0)+1;
+    if(killer.isPlayer){ kills++; sfxKill(); addToast('击杀 +1','pink'); }
+    if(s.isPlayer) deathCause='被「'+killer.name+'」击杀';
+  }
+  if(s.isPlayer) sfxDeath();
+}
+function hitCheck(s){
+  for(const o of snakes){
+    if(o===s||o.dead) continue;
+    for(let i=0;i<o.points.length;i+=2){
+      const p=o.points[i];
+      if(Math.abs(p.x-s.x)>44||Math.abs(p.y-s.y)>44) continue;
+      const rr=s.radius+o.radius*0.82;
+      if(dist2(s.x,s.y,p.x,p.y)<rr*rr) return o;
+    }
+  }
+  return null;
+}
+
+/* ---------- 主更新 ---------- */
+function updateSnakes(dt){
+  for(const s of snakes){
+    if(s.dead) continue;
+    s.radius=radiusOf(s.score);
+    s.bodyPx=Math.max(40, 60+(s.score-10)*6);
+    s.eatCd-=dt;
+    if(s.isPlayer && !playerAuto){
+      s.targetAngle=Math.atan2(mouse.y-VH/2, mouse.x-VW/2);
+      s.boosting=mouse.down&&s.score>12;
+    }else{
+      updateAI(s,dt);
+    }
+    s.angle=angleLerp(s.angle,s.targetAngle,clamp(TURN_RATE*6.2*dt,0,1));
+    let sp=BASE_SPEED;
+    if(s.boosting){
+      sp*=BOOST_MULT;
+      s.score-=0.09*dt;
+      s.boostAcc+=sp*dt;
+      if(s.boostAcc>16){
+        s.boostAcc=0;
+        const t=s.points[s.points.length-1];
+        if(t) foods.push(makeFood(t.x+rand(-6,6),t.y+rand(-6,6),false,s.color));
+      }
+    }
+    s.x+=Math.cos(s.angle)*sp*dt;
+    s.y+=Math.sin(s.angle)*sp*dt;
+    s.travelled+=sp*dt;
+    while(s.travelled>=SEG_GAP){
+      s.travelled-=SEG_GAP;
+      s.points.unshift({x:s.x,y:s.y});
+    }
+    trimPoints(s);
+    eat(s);
+    if(s.x<s.radius||s.x>WORLD-s.radius||s.y<s.radius||s.y>WORLD-s.radius){
+      if(s.isPlayer) deathCause='撞上了边界墙';
+      killSnake(s,null);
+    }
+  }
+  for(const s of snakes){
+    if(s.dead) continue;
+    const o=hitCheck(s);
+    if(!o) continue;
+    if(dist2(s.x,s.y,o.x,o.y)<(s.radius+o.radius)*(s.radius+o.radius)){
+      if(s.isPlayer||o.isPlayer) deathCause='与对手同归于尽';
+      killSnake(s,null); killSnake(o,null);
+    }else killSnake(s,o);
+  }
+}
+/* ---------- 渲染 ---------- */
+const w2sX=x=>x-cam.x+VW/2, w2sY=y=>y-cam.y+VH/2;
+function drawBackground(){
+  ctx.fillStyle='#070b1c';
+  ctx.fillRect(0,0,VW,VH);
+}
+function drawGrid(){
+  const g=80;
+  const x0=Math.floor((cam.x-VW/2)/g)*g, y0=Math.floor((cam.y-VH/2)/g)*g;
+  ctx.lineWidth=1; ctx.strokeStyle='rgba(0,180,210,0.075)';
+  ctx.beginPath();
+  for(let x=x0;x<=cam.x+VW/2;x+=g){ const sx=w2sX(x); ctx.moveTo(sx,0); ctx.lineTo(sx,VH); }
+  for(let y=y0;y<=cam.y+VH/2;y+=g){ const sy=w2sY(y); ctx.moveTo(0,sy); ctx.lineTo(VW,sy); }
+  ctx.stroke();
+}
+function drawWalls(){
+  const x=w2sX(0), y=w2sY(0);
+  ctx.strokeStyle='rgba(241,91,181,0.55)';
+  ctx.shadowColor='#f15bb5'; ctx.shadowBlur=18;
+  ctx.lineWidth=3;
+  ctx.strokeRect(x,y,WORLD,WORLD);
+  ctx.shadowBlur=0;
+}
+function drawFoods(t){
+  for(const f of foods){
+    const sx=w2sX(f.x), sy=w2sY(f.y);
+    if(sx<-20||sx>VW+20||sy<-20||sy>VH+20) continue;
+    const p=1+Math.sin(t*0.004+f.pulse)*0.18;
+    ctx.beginPath();
+    ctx.fillStyle=f.color;
+    if(f.big){ ctx.shadowColor=f.color; ctx.shadowBlur=15; }
+    ctx.arc(sx,sy,f.r*p,0,6.283);
+    ctx.fill();
+    if(f.big) ctx.shadowBlur=0;
+  }
+}
+function drawHead(s){
+  const sx=w2sX(s.x), sy=w2sY(s.y);
+  ctx.fillStyle=s.color;
+  ctx.shadowColor=s.color; ctx.shadowBlur=16;
+  ctx.beginPath(); ctx.arc(sx,sy,s.radius,0,6.283); ctx.fill();
+  ctx.shadowBlur=0;
+  const fx=Math.cos(s.angle), fy=Math.sin(s.angle), px=-fy, py=fx;
+  for(const side of [-1,1]){
+    const ex=sx+fx*s.radius*0.55+px*s.radius*0.55*side;
+    const ey=sy+fy*s.radius*0.55+py*s.radius*0.55*side;
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(ex,ey,s.radius*0.32,0,6.283); ctx.fill();
+    ctx.fillStyle='#05070f';
+    ctx.beginPath(); ctx.arc(ex+fx*s.radius*0.13,ey+fy*s.radius*0.13,s.radius*0.17,0,6.283); ctx.fill();
+  }
+}
+function drawSnake(s){
+  if(s.points.length<2) return;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.shadowColor=s.color; ctx.shadowBlur=s.boosting?22:12;
+  ctx.strokeStyle=s.color; ctx.lineWidth=s.radius*2;
+  ctx.beginPath();
+  ctx.moveTo(w2sX(s.points[0].x),w2sY(s.points[0].y));
+  for(let i=1;i<s.points.length;i++){ const p=s.points[i]; ctx.lineTo(w2sX(p.x),w2sY(p.y)); }
+  ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=s.radius*0.7;
+  ctx.beginPath();
+  ctx.moveTo(w2sX(s.points[0].x),w2sY(s.points[0].y));
+  for(let i=1;i<s.points.length;i++){ const p=s.points[i]; ctx.lineTo(w2sX(p.x),w2sY(p.y)); }
+  ctx.stroke();
+  drawHead(s);
+  if(s.boosting) drawSpeedLines(s);
+}
+function drawSpeedLines(s){
+  ctx.strokeStyle='rgba(255,255,255,0.45)';
+  ctx.lineWidth=2; ctx.lineCap='round';
+  const hx=w2sX(s.x), hy=w2sY(s.y), back=s.angle+Math.PI;
+  const px=-Math.sin(s.angle), py=Math.cos(s.angle);
+  for(let k=-1;k<=1;k++){
+    const a=back+k*0.4, d1=s.radius*1.6, d2=s.radius*3.2;
+    ctx.beginPath();
+    ctx.moveTo(hx+Math.cos(a)*d1+px*k*s.radius*0.6, hy+Math.sin(a)*d1+py*k*s.radius*0.6);
+    ctx.lineTo(hx+Math.cos(a)*d2+px*k*s.radius*0.6, hy+Math.sin(a)*d2+py*k*s.radius*0.6);
+    ctx.stroke();
+  }
+}
+function drawMinimap(){
+  const sc=mini.width/WORLD;
+  mctx.clearRect(0,0,120,120);
+  mctx.fillStyle='rgba(7,11,28,0.92)'; mctx.fillRect(0,0,120,120);
+  mctx.strokeStyle='rgba(0,245,212,0.3)'; mctx.strokeRect(0.5,0.5,119,119);
+  for(const s of snakes){
+    if(s.dead) continue;
+    mctx.fillStyle=s.color;
+    mctx.beginPath(); mctx.arc(s.x*sc,s.y*sc,s.isPlayer?3.2:2,0,6.283); mctx.fill();
+  }
+}
+function addToast(text,cls){ toasts.push({text,cls,life:1}); }
+function drawToasts(){
+  ctx.textAlign='center';
+  for(const t of toasts){
+    const a=clamp(t.life,0,1), y=VH*0.3-(1-t.life)*46;
+    const pink=t.cls==='pink';
+    ctx.font='700 23px Orbitron,monospace';
+    ctx.fillStyle=pink?'rgba(241,91,181,'+a+')':'rgba(0,245,212,'+a+')';
+    ctx.shadowColor=pink?'#f15bb5':'#00f5d4'; ctx.shadowBlur=14;
+    ctx.fillText(t.text,VW/2,y);
+  }
+  ctx.shadowBlur=0;
+}
+
+/* ---------- 粒子（死亡爆炸） ---------- */
+function explode(x,y,color,n){
+  for(let i=0;i<n;i++){
+    const a=rand(0,6.283), sp=rand(1,6.5);
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rand(.7,1),color,r:rand(2,4.2)});
+  }
+}
+function updateParticles(dt){
+  for(const p of particles){
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vx*=Math.pow(.95,dt); p.vy*=Math.pow(.95,dt);
+    p.life-=0.03*dt;
+  }
+  particles=particles.filter(p=>p.life>0);
+}
+function drawParticles(){
+  for(const p of particles){
+    const sx=w2sX(p.x), sy=w2sY(p.y);
+    if(sx<-10||sx>VW+10||sy<-10||sy>VH+10) continue;
+    ctx.globalAlpha=clamp(p.life,0,1);
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(sx,sy,p.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------- 相机 ---------- */
+function updateCam(dt){
+  if(!player||player.dead) return;
+  const tx=player.x+Math.cos(player.angle)*player.radius*3;
+  const ty=player.y+Math.sin(player.angle)*player.radius*3;
+  const k=Math.min(1,0.12*dt);
+  cam.x+=(tx-cam.x)*k; cam.y+=(ty-cam.y)*k;
+}
+
+/* ---------- 排行榜 / HUD ---------- */
+function updateBoard(){
+  const sorted=snakes.filter(s=>!s.dead).sort((a,b)=>b.score-a.score).slice(0,6);
+  let html='';
+  sorted.forEach((s,i)=>{
+    html+='<div class="board-row'+(s.isPlayer?' me':'')+'">'
+      +'<span class="rank">'+(i+1)+'</span>'
+      +'<span class="dot" style="background:'+s.color+'"></span>'
+      +'<span class="nm">'+s.name+'</span>'
+      +'<span class="ln">'+Math.round(s.score)+'</span></div>';
+  });
+  boardList.innerHTML=html;
+  vLen.textContent=Math.round(player&&!player.dead?player.score:score);
+  vKill.textContent=kills;
+}
+
+/* ---------- 初始化 / 流程 ---------- */
+function initGame(){
+  snakes=[]; foods=[]; score=0; kills=0; deathCause=''; toasts=[];
+  for(let i=0;i<FOOD_TARGET;i++) foods.push(makeFood());
+  player=makeSnake(true,0); snakes.push(player);
+  for(let i=0;i<AI_COUNT;i++) snakes.push(makeSnake(false,i));
+  cam.x=player.x; cam.y=player.y;
+}
+function maintain(){
+  let guard=0;
+  while(foods.length<FOOD_TARGET&&guard<40){ foods.push(makeFood()); guard++; }
+  if(!player||player.dead) return;
+  snakes=snakes.filter(s=>s.isPlayer||!s.dead);
+  let aiNow=snakes.filter(s=>!s.isPlayer).length, g2=0;
+  while(aiNow<AI_COUNT&&g2<20){ snakes.push(makeSnake(false,g2)); aiNow++; g2++; }
+}
+function startGame(){
+  initAudio();
+  if(AC&&AC.state==='suspended') AC.resume();
+  playerAuto=false;
+  PLAYER_COLOR=PALETTE[6];
+  initGame();
+  state='playing';
+  menu.classList.add('hidden'); dead.classList.add('hidden');
+  el('autoBtn').classList.remove('on');
+  el('autoTag').style.display='none';
+  el('colorDot').style.background=PLAYER_COLOR;
+}
+function cyclePlayerColor(){
+  const cur=player.color;
+  const idx=PALETTE.indexOf(cur);
+  const next=PALETTE[(idx+1)%PALETTE.length];
+  const ai=snakes.find(s=>!s.isPlayer&&!s.dead&&s.color===next);
+  player.color=next;
+  if(ai) ai.color=cur;
+  PLAYER_COLOR=next;
+  el('colorDot').style.background=next;
+}
+function endGame(){
+  state='dead';
+  const finalLen=Math.round(player.score);
+  const isNew=finalLen>best;
+  if(isNew){ best=finalLen; localStorage.setItem('neonSnakeBest',best); }
+  el('dLen').textContent=finalLen;
+  el('dKill').textContent=kills;
+  el('dBest').textContent=best;
+  el('dCause').innerHTML=deathCause?'死因：<b>'+deathCause+'</b>':'';
+  el('newRec').style.display=isNew?'block':'none';
+  menuBest.textContent=best;
+  setTimeout(()=>dead.classList.remove('hidden'),850);
+}
+
+/* ---------- 主循环 ---------- */
+function render(t){
+  drawBackground(); drawGrid(); drawWalls(); drawFoods(t);
+  for(const s of snakes) if(!s.isPlayer&&!s.dead) drawSnake(s);
+  if(player&&!player.dead) drawSnake(player);
+  drawMinimap(); drawParticles(); drawToasts();
+}
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=clamp((now-lastTime)/16.67,0.2,2.5)||1;
+  lastTime=now;
+  for(const t of toasts) t.life-=0.022*dt;
+  toasts=toasts.filter(t=>t.life>0);
+  updateParticles(dt);
+  if(state==='playing'){
+    updateSnakes(dt);
+    maintain();
+    updateCam(dt);
+    if(player&&player.dead) endGame();
+  }
+  render(now);
+  if(state==='playing') updateBoard();
+}
+
+/* ---------- 输入 ---------- */
+canvas.addEventListener('mousemove',e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+canvas.addEventListener('mousedown',e=>{ mouse.down=true; mouse.x=e.clientX; mouse.y=e.clientY; });
+window.addEventListener('mouseup',()=>mouse.down=false);
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault(); const t=e.touches[0]; mouse.x=t.clientX; mouse.y=t.clientY; mouse.down=true;
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault(); const t=e.touches[0]; mouse.x=t.clientX; mouse.y=t.clientY;
+},{passive:false});
+canvas.addEventListener('touchend',e=>{ e.preventDefault(); mouse.down=false; },{passive:false});
+window.addEventListener('keydown',e=>{ if(e.code==='Space'){ mouse.down=true; e.preventDefault(); } });
+window.addEventListener('keyup',e=>{ if(e.code==='Space') mouse.down=false; });
+
+/* ---------- 按钮 ---------- */
+el('startBtn').addEventListener('click',startGame);
+el('retryBtn').addEventListener('click',startGame);
+el('soundBtn').addEventListener('click',()=>{
+  muted=!muted;
+  localStorage.setItem('neonSnakeMuted',muted?'1':'0');
+  el('icSoundOn').style.display=muted?'none':'block';
+  el('icSoundOff').style.display=muted?'block':'none';
+  if(!muted){ initAudio(); if(AC&&AC.state==='suspended')AC.resume(); }
+});
+el('autoBtn').addEventListener('click',()=>{
+  if(state!=='playing') return;
+  playerAuto=!playerAuto;
+  el('autoBtn').classList.toggle('on',playerAuto);
+  el('autoTag').style.display=playerAuto?'block':'none';
+});
+el('colorBtn').addEventListener('click',()=>{
+  if(state!=='playing') return;
+  cyclePlayerColor();
+});
+el('colorDot').style.background=PLAYER_COLOR;
+el('icSoundOn').style.display=muted?'none':'block';
+el('icSoundOff').style.display=muted?'block':'none';
+
+/* ---------- 启动 ---------- */
+resize();
+initGame();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

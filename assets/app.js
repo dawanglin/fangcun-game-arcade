@@ -33,6 +33,7 @@ const games = [
   { file: '数织Nonogram.html', title: '数织 Nonogram', cat: 'numbers', glyph: '织', level: '中等', desc: '依据行列提示拼出隐藏像素图案' },
   { file: '数字华容道.html', title: '数字华容道', cat: 'numbers', glyph: '格', level: '经典', desc: '移动方块，把打乱的数字恢复顺序' },
   { file: '贪吃蛇.html', title: '贪吃蛇', cat: 'casual', glyph: '蛇', level: '反应', desc: '控制方向，吃得更长又别撞到自己' },
+  { file: '霓虹贪吃蛇大作战.html', title: '霓虹贪吃蛇大作战', cat: 'casual', glyph: '霓', level: '挑战', desc: '在霓虹竞技场吞噬成长，冲击长度榜首' },
   { file: '羊了个羊.html', title: '羊了个羊', cat: 'casual', glyph: '羊', level: '挑战', desc: '从叠层牌面中凑齐三张完成消除' },
   { file: '真假话.html', title: '真假话', cat: 'logic', glyph: '真', level: '中等', desc: '判断陈述真假，锁定唯一答案' },
   { file: 'KenKen.html', title: 'KenKen 肯肯', cat: 'numbers', glyph: '肯', level: '烧脑', desc: '结合拉丁方与算术目标完成棋盘' },
@@ -70,18 +71,19 @@ function saveRecent(file) {
 
 function renderHome() {
   const recent = getRecent().map(file => games.find(game => game.file === file)).filter(Boolean);
-  const featured = recent.length ? recent : [games[10], games[19], games[20], games[1], games[31], games[17]];
+  const featuredFiles = ['经典逻辑游戏合集.html', '扫雷.html', '数独.html', '2048.html', '霓虹贪吃蛇大作战.html', '赛博徒步-生死鳌太线.html'];
+  const featured = recent.length ? recent : featuredFiles.map(file => games.find(game => game.file === file)).filter(Boolean);
   const now = new Date();
   const dayIndex = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000) % games.length;
   const daily = games[dayIndex];
   const lastGame = recent[0];
   main.innerHTML = `<section class="hero">
-    <div class="hero-copy"><h1>坐下来，解开一局。</h1><p>32 款中文网页游戏收进同一座小馆。无需下载，选个抽屉，打开就能玩。</p><div class="hero-actions"><a class="solid-button" href="${lastGame ? gameHref(lastGame) : gameHref(daily)}">${lastGame ? '继续上次游戏' : '开始今日一局'}</a><button class="quiet-button" type="button" data-random>随机选一款</button></div></div>
+    <div class="hero-copy"><h1>坐下来，解开一局。</h1><p>${games.length} 款中文网页游戏收进同一座小馆。无需下载，选个抽屉，打开就能玩。</p><div class="hero-actions"><a class="solid-button" href="${lastGame ? gameHref(lastGame) : gameHref(daily)}">${lastGame ? '继续上次游戏' : '开始今日一局'}</a><button class="quiet-button" type="button" data-random>随机选一款</button></div></div>
     <div class="hero-drawers">${Object.entries(categories).map(([key, cat]) => `<a class="drawer" href="${categoryHref(key)}"><span class="drawer-symbol">${cat.symbol}</span><span><strong>${cat.name}</strong><small>${cat.intro}</small></span><span class="drawer-count">${categoryGames(key).length}</span></a>`).join('')}</div>
   </section>
-  <div class="score-strip" aria-label="游戏馆数据"><div><strong>32</strong><span>款完整游戏</span></div><div><strong>3</strong><span>种玩法分类</span></div><div><strong>0</strong><span>下载与注册</span></div></div>
+  <div class="score-strip" aria-label="游戏馆数据"><div><strong>${games.length}</strong><span>款完整游戏</span></div><div><strong>3</strong><span>种玩法分类</span></div><div><strong>0</strong><span>下载与注册</span></div></div>
   <div class="page-shell"><section><div class="section-heading"><div><h2>今日签</h2><p>每天从馆里抽出一款，给选择困难留条捷径。</p></div></div><article class="daily-ticket"><div class="ticket-date"><strong>${String(now.getDate()).padStart(2, '0')}</strong><span>${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}</span></div><div class="ticket-copy"><small>${categories[daily.cat].name} · ${daily.level}</small><h3>${daily.title}</h3><p>${daily.desc}</p></div><a class="ticket-stamp" href="${gameHref(daily)}">揭签开玩</a></article></section>
-  <section class="section"><div class="section-heading"><div><h2>${recent.length ? '接着玩' : '从这里开始'}</h2><p>${recent.length ? '最近打开过的游戏都在这里。' : '第一次来？先从这些经典玩法里挑一款。'}</p></div><button class="quiet-button" type="button" data-open-search>查看全部 32 款</button></div><div class="game-grid">${featured.map(gameCard).join('')}</div></section></div>`;
+  <section class="section"><div class="section-heading"><div><h2>${recent.length ? '接着玩' : '从这里开始'}</h2><p>${recent.length ? '最近打开过的游戏都在这里。' : '第一次来？先从这些经典玩法里挑一款。'}</p></div><button class="quiet-button" type="button" data-open-search>查看全部 ${games.length} 款</button></div><div class="game-grid">${featured.map(gameCard).join('')}</div></section></div>`;
   document.querySelector('[data-open-search]')?.addEventListener('click', openSearch);
   document.querySelector('[data-random]')?.addEventListener('click', () => { location.hash = `game=${enc(games[Math.floor(Math.random() * games.length)].file)}`; });
 }
@@ -135,7 +137,7 @@ function route() {
     playerKeyHandler = null;
   }
   const hash = location.hash.replace(/^#/, '') || 'home';
-  document.title = '方寸游戏馆 · 32 款即开即玩';
+  document.title = `方寸游戏馆 · ${games.length} 款即开即玩`;
   if (hash === 'home') renderHome();
   else if (hash.startsWith('category=')) renderCategory(hash.slice(9));
   else if (hash.startsWith('game=')) renderGame(decodeURIComponent(hash.slice(5)));
