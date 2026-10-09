@@ -78,7 +78,7 @@ function renderHome() {
   const daily = games[dayIndex];
   const lastGame = recent[0];
   main.innerHTML = `<section class="hero">
-    <div class="hero-copy"><h1>坐下来，解开一局。</h1><p>${games.length} 款中文网页游戏收进同一座小馆。无需下载，选个抽屉，打开就能玩。</p><div class="hero-actions"><a class="solid-button" href="${lastGame ? gameHref(lastGame) : gameHref(daily)}">${lastGame ? '继续上次游戏' : '开始今日一局'}</a><button class="quiet-button" type="button" data-random>随机选一款</button></div></div>
+    <div class="hero-copy"><span class="hero-badge">网页游戏馆</span><h1>坐下来，解开一局。</h1><p>${games.length} 款中文网页游戏收进同一座小馆。无需下载，选择分类，打开就能玩。</p><div class="hero-actions"><a class="solid-button" href="${lastGame ? gameHref(lastGame) : gameHref(daily)}">${lastGame ? '继续上次游戏' : '开始今日一局'}</a><button class="quiet-button" type="button" data-random>随机选一款</button></div></div>
     <div class="hero-drawers">${Object.entries(categories).map(([key, cat]) => `<a class="drawer" href="${categoryHref(key)}"><span class="drawer-symbol">${cat.symbol}</span><span><strong>${cat.name}</strong><small>${cat.intro}</small></span><span class="drawer-count">${categoryGames(key).length}</span></a>`).join('')}</div>
   </section>
   <div class="score-strip" aria-label="游戏馆数据"><div><strong>${games.length}</strong><span>款完整游戏</span></div><div><strong>3</strong><span>种玩法分类</span></div><div><strong>0</strong><span>下载与注册</span></div></div>
@@ -132,6 +132,7 @@ function renderNotFound() {
 }
 
 function route() {
+  if (!searchPanel.hidden) closeSearch();
   if (playerKeyHandler) {
     document.removeEventListener('keydown', playerKeyHandler);
     playerKeyHandler = null;
